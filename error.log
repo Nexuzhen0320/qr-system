@@ -1,0 +1,10 @@
+[08-Apr-2025 19:33:25 Europe/Berlin] PHP Fatal error:  Uncaught ArgumentCountError: The number of variables must match the number of parameters in the prepared statement in C:\xampp\htdocs\system\send.php:78
+Stack trace:
+#0 C:\xampp\htdocs\system\send.php(78): mysqli_stmt->bind_param('ssssss', 'tolentinoniephr...', '$2y$10$tnSn25IW...', '655508', '2025-04-08 19:3...', '::1', NULL)
+#1 {main}
+  thrown in C:\xampp\htdocs\system\send.php on line 78
+[08-Apr-2025 19:38:58 Europe/Berlin] PHP Fatal error:  Uncaught ArgumentCountError: The number of variables must match the number of parameters in the prepared statement in C:\xampp\htdocs\system\send.php:78
+Stack trace:
+#0 C:\xampp\htdocs\system\send.php(78): mysqli_stmt->bind_param('ssssss', 'tolentinoniephr...', '$2y$10$pEzDKppr...', '196242', '2025-04-08 19:3...', '::1', NULL)
+#1 {main}
+  thrown in C:\xampp\htdocs\system\send.php on line 78
