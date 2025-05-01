@@ -12,6 +12,7 @@ if (empty($_SESSION['status_Account']) || empty($_SESSION['email'])) {
     header("Location: index.php");
     exit();
 }
+
 // Fetch user_id
 $email = $_SESSION['email'];
 $stmt = $connection->prepare("SELECT user_id FROM data WHERE email = ?");
@@ -125,13 +126,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_appointment'])
             $success_message = 'Appointment and user information submitted successfully!';
             // Clear profile photo session
             unset($_SESSION['profilePhoto']);
-            // Redirect to dashboard
+
+            // Check if request is AJAX
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true, 'message' => 'Submit Application Successfully']);
+                exit();
+            }
+
+            // Non-AJAX: Redirect to dashboard
             header("Location: dashboard.php");
             exit();
         } catch (Exception $e) {
             // Rollback transaction on error
             $connection->rollback();
             $errors['general'] = 'Failed to submit appointment and user information. Please try again.';
+
+            // Check if request is AJAX
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'error' => $errors['general']]);
+                exit();
+            }
+        }
+    } else {
+        // Validation errors for AJAX
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Validation failed', 'errors' => $errors]);
+            exit();
         }
     }
 }
@@ -407,6 +430,15 @@ $connection->close();
         .success-message {
             color: var(--success-color);
             background: #f0fdf4;
+            font-size: 16px;
+            font-weight: 700;
+            border: 2px solid var(--success-color);
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
         }
 
         .error {
@@ -779,11 +811,55 @@ $connection->close();
                 return isValid;
             }
 
-            // Form Submission
+            // Form Submission with AJAX
             form.addEventListener("submit", function(e) {
+                e.preventDefault();
                 if (!validateForm()) {
-                    e.preventDefault();
+                    return;
                 }
+
+                // Show loading spinner
+                loadingSpinner.style.display = "block";
+                successMessage.style.display = "none";
+                errorMessage.style.display = "none";
+
+                // Create FormData object
+                const formData = new FormData(form);
+
+                // Send AJAX request
+                fetch('', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    loadingSpinner.style.display = "none";
+                    if (data.success) {
+                        successMessage.textContent = data.message || "Submit Application Successfully";
+                        successMessage.style.display = "block";
+                        // Delay redirect to show the success message
+                        setTimeout(() => {
+                            window.location.href = "dashboard.php";
+                        }, 2000);
+                    } else {
+                        errorMessage.textContent = data.error || "Failed to submit appointment. Please try again.";
+                        errorMessage.style.display = "block";
+                    }
+                })
+                .catch(error => {
+                    loadingSpinner.style.display = "none";
+                    errorMessage.textContent = "An error occurred during submission. Please try again.";
+                    errorMessage.style.display = "block";
+                    console.error('Error:', error);
+                });
             });
 
             // Initialize error and success message visibility
