@@ -28,7 +28,7 @@ $success_message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_appointment'])) {
     // Collect form data
-    $last_name = filter_input(INPUT_POST, 'lastName', FILTER_SANITIZE_STRING);
+    $last_name = filter_input(INPUT_POST, 'lastName', );
     $first_name = filter_input(INPUT_POST, 'firstName', FILTER_SANITIZE_STRING);
     $middle_name = filter_input(INPUT_POST, 'middleName', FILTER_SANITIZE_STRING);
     $sex = filter_input(INPUT_POST, 'sex', FILTER_SANITIZE_STRING);
