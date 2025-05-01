@@ -69,12 +69,15 @@ session_start();
         .input-group input {
             width: 100%;
             padding: 12px 40px;
-            border: 1px solid #ddd;
+            border: 3px solid #ddd;
             border-radius: 8px;
             font-size: 16px;
             color: #333;
             background: rgba(255, 255, 255, 0.5);
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        #password, #cpassword {
+            padding-right: 60px; /* Adjust padding to accommodate icon */
         }
 
         .input-group input:focus {
@@ -111,13 +114,23 @@ session_start();
             color: #007bff;
         }
 
-        .input-group .valid-icon {
+        .input-group .valid-icon-email {
             position: absolute;
             top: 50%;
-            right: 12px;
+            right: 25px;
             transform: translateY(-50%);
             color: green;
             font-size: 20px;
+        }
+
+        .input-group .valid-icon-password {
+            position: absolute;
+            top: 50%;
+            right: 30px;
+            transform: translateY(-50%);
+            color: green;
+            font-size: 20px;
+            border: 3px solid;
         }
 
         .error-message-email,
@@ -258,7 +271,8 @@ session_start();
 
             .input-group .icon-left,
             .input-group .icon-right,
-            .input-group .valid-icon {
+            .input-group .valid-icon-email,
+            .input-group .valid-icon-password {
                 font-size: 18px;
             }
 
@@ -290,7 +304,7 @@ session_start();
         <div class="input-group">
             <i class='bx bxs-user icon-left'></i>
             <input type="email" name="email" id="email" placeholder="Enter your email" autocomplete="off" required>
-            <i class='bx bxs-check-circle valid-icon' id="email-valid" style="display: none;"></i>
+            <i class='bx bxs-check-circle valid-icon-email' id="email-valid" style="display: none;"></i>
         </div>
         <div class="error-message-email" id="email-error"></div>
 
@@ -298,7 +312,7 @@ session_start();
             <i class='bx bxs-lock-alt icon-left'></i>
             <i class='bx bx-show icon-right toggle-password' data-target="password"></i>
             <input type="password" name="password" id="password" placeholder="Create a password" autocomplete="off" required>
-            <i class='bx bxs-check-circle valid-icon' id="password-valid" style="display: none;"></i>
+            <i class='bx bxs-check-circle valid-icon-password' id="password-valid" style="display: none;"></i>
         </div>
         <div class="error-message-password" id="password-error"></div>
         <div class="password-strength" id="password-strength"></div>
@@ -307,7 +321,7 @@ session_start();
             <i class='bx bxs-lock-alt icon-left'></i>
             <i class='bx bx-show icon-right toggle-password' data-target="cpassword"></i>
             <input type="password" name="cpassword" id="cpassword" placeholder="Confirm your password" autocomplete="off" required>
-            <i class='bx bxs-check-circle valid-icon' id="cpassword-valid" style="display: none;"></i>
+            <i class='bx bxs-check-circle valid-icon-password' id="cpassword-valid" style="display: none;"></i>
         </div>
         <div class="error-message-cpassword" id="cpassword-error"></div>
 
