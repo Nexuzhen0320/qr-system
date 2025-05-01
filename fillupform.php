@@ -12,7 +12,6 @@ if (empty($_SESSION['status_Account']) || empty($_SESSION['email'])) {
     header("Location: index.php");
     exit();
 }
-
 // Fetch user_id
 $email = $_SESSION['email'];
 $stmt = $connection->prepare("SELECT user_id FROM data WHERE email = ?");
