@@ -23,6 +23,9 @@ $user = $result->fetch_assoc();
 $user_id = $user['user_id'];
 $stmt->close();
 
+
+// Check if user is a client
+
 // Check if user has submitted an appointment
 $stmt = $connection->prepare("SELECT * FROM appointments WHERE user_id = ?");
 $stmt->bind_param("i", $user_id);
