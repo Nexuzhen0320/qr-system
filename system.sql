@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 01, 2025 at 07:07 AM
+-- Generation Time: May 05, 2025 at 05:48 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -33,8 +33,8 @@ CREATE TABLE `appointments` (
   `last_name` varchar(50) NOT NULL,
   `first_name` varchar(50) NOT NULL,
   `middle_name` varchar(50) DEFAULT NULL,
-  `sex` enum('Male','Female','Other') NOT NULL,
-  `other_sex` varchar(50) DEFAULT NULL,
+  `gender` enum('Male','Female','Other') NOT NULL,
+  `other_gender` varchar(50) DEFAULT NULL,
   `birthdate` date NOT NULL,
   `age` int(11) NOT NULL,
   `occupation` varchar(100) NOT NULL,
@@ -55,8 +55,9 @@ CREATE TABLE `appointments` (
 -- Dumping data for table `appointments`
 --
 
-INSERT INTO `appointments` (`appointment_id`, `user_id`, `last_name`, `first_name`, `middle_name`, `sex`, `other_sex`, `birthdate`, `age`, `occupation`, `address`, `region`, `email`, `contact`, `appointment_date`, `appointment_time`, `purpose`, `profile_photo`, `status`, `created_at`, `updated_at`) VALUES
-(1, 1, 'Tolentino', 'Niephrell', 'Fernandez', 'Male', '', '2003-07-20', 21, 'N/A', 'Near La Finca de Gallo - Negros Province PH • Blk 23 Lot 2, Benares Street, Capitol Heights, Villamonte, Bacolod City, Negros Occidental, 6100, Region Vi: Western Visayas, Philippines', 'Negros Occidental', 'nepneptolentino@gmail.com', '9610703277', '2025-05-01', '14:05:00', 'checking', 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNj', 'Pending', '2025-04-26 01:13:34', '2025-04-26 01:13:34');
+INSERT INTO `appointments` (`appointment_id`, `user_id`, `last_name`, `first_name`, `middle_name`, `gender`, `other_gender`, `birthdate`, `age`, `occupation`, `address`, `region`, `email`, `contact`, `appointment_date`, `appointment_time`, `purpose`, `profile_photo`, `status`, `created_at`, `updated_at`) VALUES
+(1, 3, 'Tolentino', 'Niephrell', 'fernandez', 'Male', '', '2003-07-20', 21, 'student', 'Near La Finca de Gallo - Negros Province PH • Blk 23 Lot 2, Benares Street, Capitol Heights, Villamonte, Bacolod City, Negros Occidental, 6100, Region Vi: Western Visayas, Philippines', 'Negros Occidental', 'tolentinoniephrell@gmail.com', '9610703277', '2025-05-15', '09:09:00', 'checking', 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNj', 'Pending', '2025-05-01 09:05:46', '2025-05-01 09:05:46'),
+(2, 3, 'Tolentino', 'Niephrell', 'fernandez', 'Male', '', '2003-06-22', 21, 'student', 'Near La Finca de Gallo - Negros Province PH • Blk 23 Lot 2, Benares Street, Capitol Heights, Villamonte, Bacolod City, Negros Occidental, 6100, Region Vi: Western Visayas, Philippines', 'Negros Occidental', 'tolentinoniephrell@gmail.com', '9610703277', '2025-05-22', '19:14:00', 'checking', 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNj', 'Pending', '2025-05-01 09:10:37', '2025-05-01 09:10:37');
 
 -- --------------------------------------------------------
 
@@ -95,8 +96,8 @@ CREATE TABLE `user_information` (
   `first_name` varchar(100) NOT NULL,
   `last_name` varchar(100) NOT NULL,
   `middle_name` varchar(100) DEFAULT NULL,
-  `sex` varchar(20) NOT NULL,
-  `other_sex` varchar(100) DEFAULT NULL,
+  `gender` varchar(20) NOT NULL,
+  `other_gender` varchar(100) DEFAULT NULL,
   `birthdate` date NOT NULL,
   `age` int(11) NOT NULL,
   `occupation` varchar(100) NOT NULL,
@@ -113,8 +114,8 @@ CREATE TABLE `user_information` (
 -- Dumping data for table `user_information`
 --
 
-INSERT INTO `user_information` (`info_id`, `user_id`, `first_name`, `last_name`, `middle_name`, `sex`, `other_sex`, `birthdate`, `age`, `occupation`, `address`, `region`, `email`, `contact`, `profile_photo`, `created_at`, `updated_at`) VALUES
-(4, 1, 'Niephrell', 'Tolentino', 'Fernandez', 'Male', '', '2003-07-20', 21, 'N/A', 'Near La Finca de Gallo - Negros Province PH • Blk 23 Lot 2, Benares Street, Capitol Heights, Villamonte, Bacolod City, Negros Occidental, 6100, Region Vi: Western Visayas, Philippines', 'Negros Occidental', 'nepneptolentino@gmail.com', '9610703277', 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNj', '2025-04-26 09:13:34', '2025-04-26 09:13:34');
+INSERT INTO `user_information` (`info_id`, `user_id`, `first_name`, `last_name`, `middle_name`, `gender`, `other_gender`, `birthdate`, `age`, `occupation`, `address`, `region`, `email`, `contact`, `profile_photo`, `created_at`, `updated_at`) VALUES
+(1, 3, 'Niephrell', 'Tolentino', 'fernandez', 'Male', '', '2003-06-22', 21, 'student', 'Near La Finca de Gallo - Negros Province PH • Blk 23 Lot 2, Benares Street, Capitol Heights, Villamonte, Bacolod City, Negros Occidental, 6100, Region Vi: Western Visayas, Philippines', 'Negros Occidental', 'tolentinoniephrell@gmail.com', '9610703277', 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNj', '2025-05-01 17:05:46', '2025-05-01 17:10:37');
 
 --
 -- Indexes for dumped tables
@@ -162,7 +163,7 @@ ALTER TABLE `data`
 -- AUTO_INCREMENT for table `user_information`
 --
 ALTER TABLE `user_information`
-  MODIFY `info_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `info_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- Constraints for dumped tables
