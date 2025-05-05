@@ -213,7 +213,7 @@ $connection->close();
 </head>
 <body>
     <div class="dashboard-container" role="main">
-        <img src="./image/icons/logo1.png" alt="Organization Logo" class="logo">
+        <img src="./image/icons/logo1.ico" alt="Organization Logo" class="logo">
         <h1>Welcome to Your Dashboard</h1>
         <nav class="navbar">
             <a href="dashboard.php" class="active" aria-current="page">Dashboard</a>
@@ -227,7 +227,7 @@ $connection->close();
                 <img src="<?= htmlspecialchars($appointment['profile_photo']) ?>" alt="Profile Photo" class="profile-photo">
             <?php endif; ?>
             <p><strong>Name:</strong> <?= htmlspecialchars($appointment['first_name'] . ' ' . ($appointment['middle_name'] ? $appointment['middle_name'] . ' ' : '') . $appointment['last_name']) ?></p>
-            <p><strong>Gender:</strong> <?= htmlspecialchars($appointment['sex'] === 'Other' ? $appointment['other_sex'] : $appointment['sex']) ?></p>
+            <p><strong>Gender:</strong> <?= htmlspecialchars($appointment['gender'] === 'Other' ? $appointment['other_gender'] : $appointment['gender']) ?></p>
             <p><strong>Date of Birth:</strong> <?= htmlspecialchars($appointment['birthdate']) ?></p>
             <p><strong>Age:</strong> <?= htmlspecialchars($appointment['age']) ?></p>
             <p><strong>Occupation:</strong> <?= htmlspecialchars($appointment['occupation']) ?></p>

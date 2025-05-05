@@ -31,8 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_appointment'])
     $last_name = filter_input(INPUT_POST, 'lastName', );
     $first_name = filter_input(INPUT_POST, 'firstName', FILTER_SANITIZE_STRING);
     $middle_name = filter_input(INPUT_POST, 'middleName', FILTER_SANITIZE_STRING);
-    $sex = filter_input(INPUT_POST, 'sex', FILTER_SANITIZE_STRING);
-    $other_sex = filter_input(INPUT_POST, 'otherSex', FILTER_SANITIZE_STRING);
+    $gender = filter_input(INPUT_POST, 'gender', FILTER_SANITIZE_STRING);
+    $other_gender = filter_input(INPUT_POST, 'othergender', FILTER_SANITIZE_STRING);
     $birthdate = filter_input(INPUT_POST, 'birthdate', FILTER_SANITIZE_STRING);
     $age = filter_input(INPUT_POST, 'age', FILTER_VALIDATE_INT);
     $occupation = filter_input(INPUT_POST, 'occupation', FILTER_SANITIZE_STRING);
@@ -48,8 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_appointment'])
     // Basic validation
     if (empty($last_name)) $errors['lastName'] = 'Last name is required.';
     if (empty($first_name)) $errors['firstName'] = 'First name is required.';
-    if (empty($sex)) $errors['sex'] = 'Gender is required.';
-    if ($sex === 'Other' && empty($other_sex)) $errors['otherSex'] = 'Please specify your gender.';
+    if (empty($gender)) $errors['gender'] = 'Gender is required.';
+    if ($gender === 'Other' && empty($other_gender)) $errors['othergender'] = 'Please specify your gender.';
     if (empty($birthdate)) $errors['birthdate'] = 'Date of birth is required.';
     if (empty($age) || $age < 1 || $age > 120) $errors['age'] = 'Valid age is required.';
     if (empty($occupation)) $errors['occupation'] = 'Occupation is required.';
@@ -76,15 +76,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_appointment'])
             // Insert or update user_information
             $stmt = $connection->prepare("
                 INSERT INTO user_information (
-                    user_id, last_name, first_name, middle_name, sex, other_sex, birthdate, age, 
+                    user_id, last_name, first_name, middle_name, gender, other_gender, birthdate, age, 
                     occupation, address, region, email, contact, profile_photo
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                     last_name = VALUES(last_name),
                     first_name = VALUES(first_name),
                     middle_name = VALUES(middle_name),
-                    sex = VALUES(sex),
-                    other_sex = VALUES(other_sex),
+                    gender = VALUES(gender),
+                    other_gender = VALUES(other_gender),
                     birthdate = VALUES(birthdate),
                     age = VALUES(age),
                     occupation = VALUES(occupation),
@@ -97,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_appointment'])
             ");
             $stmt->bind_param(
                 "issssssissssss",
-                $user_id, $last_name, $first_name, $middle_name, $sex, $other_sex, $birthdate, $age,
+                $user_id, $last_name, $first_name, $middle_name, $gender, $other_gender, $birthdate, $age,
                 $occupation, $address, $region, $email, $contact, $profile_photo
             );
             $stmt->execute();
@@ -106,14 +106,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_appointment'])
             // Insert into appointments table
             $stmt = $connection->prepare("
                 INSERT INTO appointments (
-                    user_id, last_name, first_name, middle_name, sex, other_sex, birthdate, age, 
+                    user_id, last_name, first_name, middle_name, gender, other_gender, birthdate, age, 
                     occupation, address, region, email, contact, appointment_date, appointment_time, 
                     purpose, profile_photo, status
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')
             ");
             $stmt->bind_param(
                 "issssssisssssssss",
-                $user_id, $last_name, $first_name, $middle_name, $sex, $other_sex, $birthdate, $age,
+                $user_id, $last_name, $first_name, $middle_name, $gender, $other_gender, $birthdate, $age,
                 $occupation, $address, $region, $email, $contact, $appointment_date, $appointment_time,
                 $purpose, $profile_photo
             );
@@ -539,14 +539,14 @@ $connection->close();
             outline-offset: 2px;
         }
 
-        #otherSexGroup {
+        #othergenderGroup {
             margin-top: 10px;
         }
     </style>
 </head>
 <body>
     <div class="form-container" role="main">
-        <img src="./image/icons/logo1.png" alt="Organization Logo" class="logo">
+        <img src="./image/icons/logo1.ico" alt="Organization Logo" class="logo">
         <h1>New Registration Form</h1>
         <nav class="navbar">
             <a href="new_registration_form.php" class="active" aria-current="page">Registration Form</a>
@@ -589,18 +589,18 @@ $connection->close();
                 <span class="error" id="middleName-error"><?php echo $errors['middleName'] ?? ''; ?></span>
             </div>
             <div class="form-group">
-                <label for="sex" class="label required">Gender</label>
-                <select id="sex" name="sex" required aria-required="true">
+                <label for="gender" class="label required">Gender</label>
+                <select id="gender" name="gender" required aria-required="true">
                     <option value="" selected disabled>Select Gender</option>
-                    <option value="Male" <?php echo (isset($sex) && $sex === 'Male') ? 'selected' : ''; ?>>Male</option>
-                    <option value="Female" <?php echo (isset($sex) && $sex === 'Female') ? 'selected' : ''; ?>>Female</option>
-                    <option value="Other" <?php echo (isset($sex) && $sex === 'Other') ? 'selected' : ''; ?>>Other</option>
+                    <option value="Male" <?php echo (isset($gender) && $gender === 'Male') ? 'selected' : ''; ?>>Male</option>
+                    <option value="Female" <?php echo (isset($gender) && $gender === 'Female') ? 'selected' : ''; ?>>Female</option>
+                    <option value="Other" <?php echo (isset($gender) && $gender === 'Other') ? 'selected' : ''; ?>>Other</option>
                 </select>
-                <span class="error" id="sex-error"><?php echo $errors['sex'] ?? ''; ?></span>
-                <div class="form-group" id="otherSexGroup" style="display: none;">
-                    <label for="otherSex" class="label">Specify Gender</label>
-                    <input type="text" id="otherSex" name="otherSex" placeholder="Specify your gender" value="<?php echo htmlspecialchars($other_sex ?? ''); ?>">
-                    <span class="error" id="otherSex-error"><?php echo $errors['otherSex'] ?? ''; ?></span>
+                <span class="error" id="gender-error"><?php echo $errors['gender'] ?? ''; ?></span>
+                <div class="form-group" id="othergenderGroup" style="display: none;">
+                    <label for="othergender" class="label">Specify Gender</label>
+                    <input type="text" id="othergender" name="othergender" placeholder="Specify your gender" value="<?php echo htmlspecialchars($other_gender ?? ''); ?>">
+                    <span class="error" id="othergender-error"><?php echo $errors['othergender'] ?? ''; ?></span>
                 </div>
             </div>
             <div class="form-group side-by-side">
@@ -683,8 +683,8 @@ $connection->close();
         document.addEventListener("DOMContentLoaded", function () {
             // Elements
             const form = document.getElementById("newRegisterForm");
-            const sexSelect = document.getElementById("sex");
-            const otherSexGroup = document.getElementById("otherSexGroup");
+            const genderSelect = document.getElementById("gender");
+            const othergenderGroup = document.getElementById("othergenderGroup");
             const birthdateInput = document.getElementById("birthdate");
             const ageInput = document.getElementById("age");
             const contactInput = document.getElementById("contact");
@@ -714,9 +714,9 @@ $connection->close();
 
             // Toggle Other Gender Input
             function toggleOtherInput() {
-                otherSexGroup.style.display = sexSelect.value === "Other" ? "block" : "none";
+                othergenderGroup.style.display = genderSelect.value === "Other" ? "block" : "none";
             }
-            sexSelect.addEventListener("change", toggleOtherInput);
+            genderSelect.addEventListener("change", toggleOtherInput);
             toggleOtherInput();
 
             // Auto-calculate Age
@@ -745,7 +745,7 @@ $connection->close();
                 const fields = [
                     { id: "lastName", errorId: "lastName-error", message: "Last name is required" },
                     { id: "firstName", errorId: "firstName-error", message: "First name is required" },
-                    { id: "sex", errorId: "sex-error", message: "Please select a gender" },
+                    { id: "gender", errorId: "gender-error", message: "Please select a gender" },
                     { id: "birthdate", errorId: "birthdate-error", message: "Date of birth is required" },
                     { id: "age", errorId: "age-error", message: "Age is required" },
                     { id: "occupation", errorId: "occupation-error", message: "Occupation is required" },
@@ -787,15 +787,15 @@ $connection->close();
                 }
 
                 // Validate Other Gender
-                if (sexSelect.value === "Other") {
-                    const otherSexInput = document.getElementById("otherSex");
-                    const otherSexError = document.getElementById("otherSex-error");
-                    if (!otherSexInput.value.trim()) {
-                        otherSexError.textContent = "Please specify your gender.";
-                        otherSexError.style.display = "block";
+                if (genderSelect.value === "Other") {
+                    const othergenderInput = document.getElementById("othergender");
+                    const othergenderError = document.getElementById("othergender-error");
+                    if (!othergenderInput.value.trim()) {
+                        othergenderError.textContent = "Please specify your gender.";
+                        othergenderError.style.display = "block";
                         isValid = false;
                     } else {
-                        otherSexError.style.display = "none";
+                        othergenderError.style.display = "none";
                     }
                 }
 
