@@ -1,7 +1,7 @@
 <?php
 session_start();
 ob_start();
-include 'smtp2goconfig.php';
+include '../smtp configuration/smtp2goconfig.php';
 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -11,10 +11,10 @@ header('Content-Type: application/json');
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-require 'phpmailer/src/Exception.php';
-require 'phpmailer/src/PHPMailer.php';
-require 'phpmailer/src/SMTP.php';
-include 'db.php';
+require '../phpmailer/src/Exception.php';
+require '../phpmailer/src/PHPMailer.php';
+require '../phpmailer/src/SMTP.php';
+include '../database/db.php';
 
 $response = ['success' => false, 'message' => 'Something went wrong'];
 
@@ -105,7 +105,7 @@ try {
 
     $mail->SMTPDebug = 0;
     $mail->Debugoutput = function($str, $level) {
-        file_put_contents('phpmailer_debug.log', "PHPMailer[$level]: $str\n", FILE_APPEND);
+        file_put_contents('../debug_&_error_log/phpmailer_debug.log', "PHPMailer[$level]: $str\n", FILE_APPEND);
     };
 
     $mail->send();
@@ -125,7 +125,7 @@ try {
 // === Debug Output ===
 $rawOutput = ob_get_clean();
 if ($rawOutput) {
-    file_put_contents('debug_output.log', $rawOutput);
+    file_put_contents('../debug_&_error_log/debug_output.log', $rawOutput);
 }
 
 echo json_encode($response);

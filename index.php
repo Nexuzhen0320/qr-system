@@ -1,5 +1,5 @@
 <?php
-include 'db.php';
+include './database/db.php';
 session_start();
 
 // Initialize login attempts, cooldown, and forgot password flag if not set
@@ -62,10 +62,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login']) && !$is_cool
                 $_SESSION['verify_otp'] = $row['verify_otp'];
 
                 if ($row['status_Account'] === 'verified') {
-                    header("Location: dashboard.php");
+                    header("Location: ./dashboard/dashboard.php");
                     exit;
                 } else {
-                    header("Location: verify.php");
+                    header("Location: ./authentication/verify.php");
                     exit;
                 }
             } else {
@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login']) && !$is_cool
                 
                 // Append forgot password link if flag is set
                 if ($_SESSION['show_forgot_password']) {
-                    $errors['password'] .= ' <a href="forgotpas.php">Forgot Password?</a>';
+                    $errors['password'] .= ' <a href="./forgot password/forgotpas.php">Forgot Password?</a>';
                 }
                 
                 // Start cooldown after 5 attempts
@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login']) && !$is_cool
                     $errors['password'] = 'Too many login attempts. Please wait ' . $cooldown_duration . ' seconds.';
                     // Keep forgot password link during cooldown
                     if ($_SESSION['show_forgot_password']) {
-                        $errors['password'] .= ' <a href="forgotpas.php">Forgot Password?</a>';
+                        $errors['password'] .= ' <a href="./forgot password/forgotpas.php">Forgot Password?</a>';
                     }
                 }
             }
@@ -97,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login']) && !$is_cool
             
             // Append forgot password link if flag is set
             if ($_SESSION['show_forgot_password']) {
-                $errors['email'] .= ' <a href="forgotpas.php">Forgot Password?</a>';
+                $errors['email'] .= ' <a href="../forgot_password/forgotpas.php">Forgot Password?</a>';
             }
             
             // Start cooldown after 5 attempts
@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login']) && !$is_cool
                 $errors['password'] = 'Too many login attempts. Please wait ' . $cooldown_duration . ' seconds.';
                 // Keep forgot password link during cooldown
                 if ($_SESSION['show_forgot_password']) {
-                    $errors['password'] .= ' <a href="forgotpas.php">Forgot Password?</a>';
+                    $errors['password'] .= ' <a href="../forgot password/forgotpas.php">Forgot Password?</a>';
                 }
             }
         }
@@ -311,7 +311,7 @@ $connection->close();
             </div>
             <div class="error-message-password" id="password-error"><?= $errors['password'] ?></div>
             <button type="submit" name="login" id="login-button" <?= $is_cooldown ? 'disabled' : '' ?>>Login</button>
-            <a href="register.php" class="register-link">Don't have an account? Register</a>
+            <a href="./registration/register.php" class="register-link">Don't have an account? Register</a>
         </form>
     </div>
 
@@ -341,7 +341,7 @@ $connection->close();
 
             let errorText = `Too many login attempts. Please wait ${remainingTime} seconds.`;
             <?php if ($_SESSION['show_forgot_password']): ?>
-            errorText += ' <a href="forgotpas.php">Forgot Password?</a>';
+            errorText += ' <a href="../forgot_password/forgotpas.php">Forgot Password?</a>';
             <?php endif; ?>
             errorMessage.innerHTML = errorText;
             remainingTime--;

@@ -1,11 +1,12 @@
 <?php
 session_start();
 ob_start();
-require 'phpmailer/src/Exception.php';
-require 'phpmailer/src/PHPMailer.php';
-require 'phpmailer/src/SMTP.php';
-include 'db.php';
-include 'smtp2goconfig.php';
+
+require '../phpmailer/src/Exception.php';
+require '../phpmailer/src/PHPMailer.php';
+require '../phpmailer/src/SMTP.php';
+include '../database/db.php';
+include '../smtp config/smtp2goconfig.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -61,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resendotp'])) {
 
                     $mail->SMTPDebug = 0;
                     $mail->Debugoutput = function($str, $level) {
-                        file_put_contents('phpmailer_debug.log', "PHPMailer[$level]: $str\n", FILE_APPEND);
+                        file_put_contents('../debug_&_error_log/phpmailer_debug.log', "PHPMailer[$level]: $str\n", FILE_APPEND);
                     };
 
                     $mail->send();
@@ -74,11 +75,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resendotp'])) {
                     $delete_stmt->execute();
                     $delete_stmt->close();
                     $notification = "Failed to send OTP. Please try again later.";
-                    error_log("PHPMailer Error: " . $e->getMessage(), 3, 'phpmailer_error.log');
+                    error_log("PHPMailer Error: " . $e->getMessage(), 3, '../debug_&_error_log/phpmailer_error.log');
                 }
             } else {
                 $notification = "Database error. Please try again.";
-                error_log("Database Error: " . $stmt->error, 3, 'database_error.log');
+                error_log("Database Error: " . $stmt->error, 3, '../debug_&_error_log/database_error.log');
             }
             $stmt->close();
         }
@@ -88,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resendotp'])) {
 // Clean output buffer
 $rawOutput = ob_get_clean();
 if ($rawOutput) {
-    file_put_contents('debug_output.log', $rawOutput, FILE_APPEND);
+    file_put_contents('../debug_&_error_log/debug_output.log', $rawOutput, FILE_APPEND);
 }
 ?>
 
@@ -287,8 +288,8 @@ if ($rawOutput) {
         <button type="submit" id="resend-btn" <?php echo $cooldown_active ? 'disabled' : ''; ?>>
             <span class="button-content">Resend OTP <i class='bx bx-refresh'></i></span>
         </button>
-        <a href="verify.php" class="verify-link">Back to Verify OTP</a>
-        <a href="register.php" class="register-link">Back to Register</a>
+        <a href="../authentication/verify.php" class="verify-link">Back to Verify OTP</a>
+        <a href="../authentication/register.php" class="register-link">Back to Register</a>
     </form>
 </div>
 
@@ -319,7 +320,7 @@ if ($rawOutput) {
     // Handle success message and redirect
     <?php if (!empty($success_message)): ?>
         setTimeout(() => {
-            window.location.href = 'verify.php';
+            window.location.href = '../authentication/verify.php';
         }, 2000);
     <?php endif; ?>
 

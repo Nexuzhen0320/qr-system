@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 05, 2025 at 05:48 AM
+-- Generation Time: May 05, 2025 at 06:38 PM
 -- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- PHP Version: 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -37,7 +37,7 @@ CREATE TABLE `appointments` (
   `other_gender` varchar(50) DEFAULT NULL,
   `birthdate` date NOT NULL,
   `age` int(11) NOT NULL,
-  `occupation` varchar(100) NOT NULL,
+  `occupation` varchar(255) DEFAULT NULL,
   `address` text NOT NULL,
   `region` varchar(100) NOT NULL,
   `email` varchar(100) NOT NULL,
@@ -49,15 +49,7 @@ CREATE TABLE `appointments` (
   `status` enum('Pending','Approved','Rejected','Cancelled') NOT NULL DEFAULT 'Pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ;
-
---
--- Dumping data for table `appointments`
---
-
-INSERT INTO `appointments` (`appointment_id`, `user_id`, `last_name`, `first_name`, `middle_name`, `gender`, `other_gender`, `birthdate`, `age`, `occupation`, `address`, `region`, `email`, `contact`, `appointment_date`, `appointment_time`, `purpose`, `profile_photo`, `status`, `created_at`, `updated_at`) VALUES
-(1, 3, 'Tolentino', 'Niephrell', 'fernandez', 'Male', '', '2003-07-20', 21, 'student', 'Near La Finca de Gallo - Negros Province PH • Blk 23 Lot 2, Benares Street, Capitol Heights, Villamonte, Bacolod City, Negros Occidental, 6100, Region Vi: Western Visayas, Philippines', 'Negros Occidental', 'tolentinoniephrell@gmail.com', '9610703277', '2025-05-15', '09:09:00', 'checking', 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNj', 'Pending', '2025-05-01 09:05:46', '2025-05-01 09:05:46'),
-(2, 3, 'Tolentino', 'Niephrell', 'fernandez', 'Male', '', '2003-06-22', 21, 'student', 'Near La Finca de Gallo - Negros Province PH • Blk 23 Lot 2, Benares Street, Capitol Heights, Villamonte, Bacolod City, Negros Occidental, 6100, Region Vi: Western Visayas, Philippines', 'Negros Occidental', 'tolentinoniephrell@gmail.com', '9610703277', '2025-05-22', '19:14:00', 'checking', 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNj', 'Pending', '2025-05-01 09:10:37', '2025-05-01 09:10:37');
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -76,14 +68,6 @@ CREATE TABLE `data` (
   `status_Account` varchar(100) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `data`
---
-
-INSERT INTO `data` (`user_id`, `email`, `password`, `otp`, `otp_send_time`, `verify_otp`, `ip`, `status_Account`) VALUES
-(1, 'nepneptolentino@gmail.com', '$2y$10$PNdh0cRmwzKQ0bdLhIHY1OzqB9fxA2ZSz/2atiLo2/WUHltTWXL.C', NULL, '2025-04-16 06:59:51', '588894', '::1', 'verified'),
-(3, 'tolentinoniephrell@gmail.com', '$2y$10$PAKoPg448lt0Xkm9mbYwPum6bM1XNYQ7gmNvBfYnIWBlERsopFucW', NULL, '2025-04-24 07:48:41', '419545', '::1', 'verified');
-
 -- --------------------------------------------------------
 
 --
@@ -100,7 +84,7 @@ CREATE TABLE `user_information` (
   `other_gender` varchar(100) DEFAULT NULL,
   `birthdate` date NOT NULL,
   `age` int(11) NOT NULL,
-  `occupation` varchar(100) NOT NULL,
+  `occupation` varchar(255) DEFAULT NULL,
   `address` varchar(255) NOT NULL,
   `region` varchar(100) NOT NULL,
   `email` varchar(100) NOT NULL,
@@ -109,13 +93,6 @@ CREATE TABLE `user_information` (
   `created_at` datetime DEFAULT current_timestamp(),
   `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `user_information`
---
-
-INSERT INTO `user_information` (`info_id`, `user_id`, `first_name`, `last_name`, `middle_name`, `gender`, `other_gender`, `birthdate`, `age`, `occupation`, `address`, `region`, `email`, `contact`, `profile_photo`, `created_at`, `updated_at`) VALUES
-(1, 3, 'Niephrell', 'Tolentino', 'fernandez', 'Male', '', '2003-06-22', 21, 'student', 'Near La Finca de Gallo - Negros Province PH • Blk 23 Lot 2, Benares Street, Capitol Heights, Villamonte, Bacolod City, Negros Occidental, 6100, Region Vi: Western Visayas, Philippines', 'Negros Occidental', 'tolentinoniephrell@gmail.com', '9610703277', 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNj', '2025-05-01 17:05:46', '2025-05-01 17:10:37');
 
 --
 -- Indexes for dumped tables
@@ -151,19 +128,19 @@ ALTER TABLE `user_information`
 -- AUTO_INCREMENT for table `appointments`
 --
 ALTER TABLE `appointments`
-  MODIFY `appointment_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `appointment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `data`
 --
 ALTER TABLE `data`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `user_information`
 --
 ALTER TABLE `user_information`
-  MODIFY `info_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `info_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables

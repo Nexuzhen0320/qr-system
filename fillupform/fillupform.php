@@ -1,6 +1,7 @@
 <?php
+include '../database/db.php';
 session_start();
-include 'db.php';
+
 
 // Prevent caching
 header("Cache-Control: no-cache, no-store, must-revalidate");
@@ -135,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_appointment'])
             }
 
             // Non-AJAX: Redirect to dashboard
-            header("Location: dashboard.php");
+            header("Location: ../dashboard/dashboard.php");
             exit();
         } catch (Exception $e) {
             // Rollback transaction on error
@@ -546,11 +547,11 @@ $connection->close();
 </head>
 <body>
     <div class="form-container" role="main">
-        <img src="./image/icons/logo1.ico" alt="Organization Logo" class="logo">
+        <img src="../image/icons/logo1.ico" alt="Organization Logo" class="logo">
         <h1>New Registration Form</h1>
         <nav class="navbar">
             <a href="new_registration_form.php" class="active" aria-current="page">Registration Form</a>
-            <a href="logout.php">Logout</a>
+            <a href="../logout/logout.php">Logout</a>
         </nav>
 
         <form id="newRegisterForm" action="" method="POST" enctype="multipart/form-data" aria-label="Registration Form">
@@ -564,7 +565,7 @@ $connection->close();
                             <span>No Photo Uploaded</span>
                         <?php endif; ?>
                     </div>
-                    <a href="photo_upload.php" class="upload-button" aria-label="Upload profile photo">Upload Photo</a>
+                    <a href="../photo config upload/photo_upload.php" class="upload-button" aria-label="Upload profile photo">Upload Photo</a>
                     <div class="photo-upload-note">Supports: JPG, JPEG (Max 2MB)</div>
                 </div>
                 <span class="error" id="myFile-error"><?php echo $errors['myFile'] ?? ''; ?></span>
@@ -847,7 +848,7 @@ $connection->close();
                         successMessage.style.display = "block";
                         // Delay redirect to show the success message
                         setTimeout(() => {
-                            window.location.href = "dashboard.php";
+                            window.location.href = "../dashboard/dashboard.php";
                         }, 2000);
                     } else {
                         errorMessage.textContent = data.error || "Failed to submit appointment. Please try again.";

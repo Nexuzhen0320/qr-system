@@ -12,7 +12,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if (empty($email) || empty($_SESSION['otp'])) {
         $session_expired = true;
-        include "db.php";
+        include "../database/db.php";
         $delete_sql = "DELETE FROM data WHERE email = ? AND status_Account = 'pending'";
         $delete_stmt = $connection->prepare($delete_sql);
         $delete_stmt->bind_param("s", $email);
@@ -24,7 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ((time() - $otp_time) > 120) {
             $otp_expired_message = 'OTP has expired. Please click "Resend OTP" to receive a new code.';
         } elseif ($user_otp == $_SESSION['otp']) {
-            include "db.php";
+            include "../database/db.php";
             $sql = "UPDATE data SET status_Account = 'verified', otp = NULL, verify_otp = ? WHERE email = ?";
             $stmt = $connection->prepare($sql);
             $stmt->bind_param("ss", $user_otp, $email);
@@ -406,8 +406,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
             <div class="error-message-otp" id="otp-error"><?php echo isset($_POST['otp']) && $_POST['otp'] != $_SESSION['otp'] ? 'Invalid OTP. Please try again.' : ''; ?></div>
             <button type="submit" id="submit-btn"><span class="button-content">Verify <i class='bx bx-right-arrow-alt'></i></span></button>
-            <a href="resendotp.php" class="resendotp-link" id="resend-otp">Resend OTP</a>
-            <a href="register.php" class="register-link">Back to Register</a>
+            <a href="../authentication/resendotp.php" class="resendotp-link" id="resend-otp">Resend OTP</a>
+            <a href="../registration/register.php" class="register-link">Back to Register</a>
         </form>
     </div>
 
@@ -417,7 +417,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <i class='bx bxs-error-circle'></i>
                 <h3>Session Expired</h3>
                 <p>Your session has expired. Please register again to receive a new OTP.</p>
-                <button onclick="window.location.href='register.php'">Back to Register</button>
+                <button onclick="window.location.href='../registration/register.php'">Back to Register</button>
             </div>
         </div>
     <?php endif; ?>
@@ -536,7 +536,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <?php if (!empty($success_message)): ?>
             document.getElementById("success-message").style.display = "block";
             setTimeout(() => {
-                window.location.href = 'index.php';
+                window.location.href = '../index.php';
             }, 2000);
         <?php elseif (!empty($otp_expired_message)): ?>
             document.getElementById("expired-message").style.display = "block";

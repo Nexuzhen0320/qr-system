@@ -8,7 +8,7 @@ session_start();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
-    <link rel="icon" type="image/x-icon" href="./image/icons/logo1.ico">
+    <link rel="icon" type="image/x-icon" href="../image/icons/logo1.ico">
     <title>Registration</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
@@ -25,7 +25,7 @@ session_start();
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background-image: url('image/bg.jpg');
+            background-image: url('../image/bg.jpg');
             background-size: cover;
             background-position: center;
         }
@@ -126,11 +126,10 @@ session_start();
         .input-group .valid-icon-password {
             position: absolute;
             top: 50%;
-            right: 30px;
+            right: 38px;
             transform: translateY(-50%);
             color: green;
             font-size: 20px;
-            border: 3px solid;
         }
 
         .error-message-email,
@@ -300,7 +299,7 @@ session_start();
     <h5>Create Account</h5>
     <div class="subtitle">Sign up to get started</div>
     <div id="form-message" class="form-message"></div>
-    <form action="send.php" method="POST" id="registerForm">
+    <form action="../authentication/send.php" method="POST" id="registerForm">
         <div class="input-group">
             <i class='bx bxs-user icon-left'></i>
             <input type="email" name="email" id="email" placeholder="Enter your email" autocomplete="off" required>
@@ -329,7 +328,7 @@ session_start();
         <input type="hidden" name="subject" value="OTP Verification Code">
         <button type="submit" id="submit-btn" disabled><span class="button-content">Register <i class='bx bx-right-arrow-alt'></i></span></button>
 
-        <a href="index.php" class="login-link">Already have an account? Login</a>
+        <a href="../index.php" class="login-link">Already have an account? Login</a>
     </form>
 </div>
 
@@ -453,7 +452,7 @@ session_start();
                 submitButton.classList.add('loading');
 
                 const formData = new FormData(form);
-                const response = await fetch("send.php", {
+                const response = await fetch("../authentication/send.php", {
                     method: "POST",
                     body: formData,
                 });
@@ -463,7 +462,7 @@ session_start();
                     formMessage.className = 'form-message success';
                     formMessage.textContent = 'Registration successful! OTP sent to your email.';
                     setTimeout(() => {
-                        window.location.href = `verify.php?email=${encodeURIComponent(formData.get('email'))}`;
+                        window.location.href = `../authentication/verify.php?email=${encodeURIComponent(formData.get('email'))}`;
                     }, 2000);
                 } else {
                     formMessage.className = 'form-message error';

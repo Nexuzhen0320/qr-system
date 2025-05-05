@@ -1,15 +1,15 @@
 <?php
 session_start();
 ob_start();
-include 'smtp2goconfig.php';
+include '../smtp configuration/smtp2goconfig.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-require 'phpmailer/src/Exception.php';
-require 'phpmailer/src/PHPMailer.php';
-require 'phpmailer/src/SMTP.php';
-include 'db.php';
+require '../phpmailer/src/Exception.php';
+require '../phpmailer/src/PHPMailer.php';
+require '../phpmailer/src/SMTP.php';
+include '../database/db.php';
 
 // Initialize messages
 $error_message = '';
@@ -407,7 +407,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </div>
                 <div class="error-message" id="otp-error"></div>
                 <button type="submit">Verify OTP <i class='bx bx-right-arrow-alt'></i></button>
-                <a href="index.php" class="back-link">Back to Login</a>
+                <a href="../index.php" class="back-link">Back to Login</a>
             </form>
         <?php else: ?>
             <!-- Step 1: Request OTP Form -->
@@ -419,7 +419,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </div>
                 <div class="error-message" id="email-error"></div>
                 <button type="submit">Send OTP <i class='bx bx-right-arrow-alt'></i></button>
-                <a href="index.php" class="back-link">Back to Login</a>
+                <a href="../index.php" class="back-link">Back to Login</a>
             </form>
         <?php endif; ?>
     </div>
@@ -431,7 +431,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <i class='bx bxs-error-circle'></i>
                 <h3>Session Expired</h3>
                 <p>Your session has expired. Please try again.</p>
-                <button onclick="window.location.href='index.php'">Back to Login</button>
+                <button onclick="window.location.href='../index.php'">Back to Login</button>
             </div>
         </div>
     <?php endif; ?>
@@ -502,7 +502,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             const successMessage = document.getElementById("success-message");
             successMessage.style.display = 'block';
             setTimeout(() => {
-                window.location.href = 'index.php';
+                window.location.href = '../index.php';
             }, 2000);
         <?php elseif (!empty($success_message)): ?>
             document.getElementById("success-message").style.display = 'block';

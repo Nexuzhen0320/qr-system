@@ -56,14 +56,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profilePhoto'])) {
                     imagedestroy($image);
                     $dataUrl = 'data:image/jpeg;base64,' . base64_encode($compressedData);
                     $_SESSION['profilePhoto'] = $dataUrl;
-                    header("Location: photo_upload.php");
+                    header("Location: ../photo config upload/photo_upload.php");
                     exit();
                 }
             } else {
                 // Fallback: Store client-side compressed image
                 if (!empty($_POST['compressedImage'])) {
                     $_SESSION['profilePhoto'] = $_POST['compressedImage'];
-                    header("Location: photo_upload.php");
+                    header("Location: ../photo config upload/photo_upload.php");
                     exit();
                 } else {
                     $error = "Server image processing unavailable. Ensure client-side compression is enabled.";
@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profilePhoto'])) {
 // Handle photo removal
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['removePhoto'])) {
     unset($_SESSION['profilePhoto']);
-    header("Location: photo_upload.php");
+    header("Location: ../photo config upload/photo_upload.php");
     exit();
 }
 ?>
@@ -340,9 +340,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['removePhoto'])) {
 </head>
 <body>
     <div class="form-container" role="main">
-        <img src="./image/icons/logo1.ico" alt="Organization Logo" class="logo">
+        <img src="../image/icons/logo1.ico" alt="Organization Logo" class="logo">
         <h1>Upload Profile Photo</h1>
-        <form id="photoUploadForm" action="photo_upload.php" method="POST" enctype="multipart/form-data" aria-label="Profile Photo Upload Form">
+        <form id="photoUploadForm" action="../photo config upload/photo_upload.php" method="POST" enctype="multipart/form-data" aria-label="Profile Photo Upload Form">
             <input type="hidden" id="compressedImage" name="compressedImage">
             <div class="photo-preview-container">
                 <div class="photo-placeholder" id="photoPlaceholder">
@@ -364,7 +364,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['removePhoto'])) {
                 <?php endif; ?>
                 <div class="error-message" id="uploadError" role="alert"><?php echo isset($error) ? htmlspecialchars($error) : ''; ?></div>
                 <div class="success-message" id="uploadSuccess" role="alert">Photo uploaded successfully!</div>
-                <a href="fillupform.php" class="back-button" aria-label="Back to registration form">Back to Form</a>
+                <a href="../fillupform/fillupform.php" class="back-button" aria-label="Back to registration form">Back to Form</a>
             </div>
         </form>
     </div>
