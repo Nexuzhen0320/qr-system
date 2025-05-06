@@ -95,20 +95,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login']) && !$is_cool
             $_SESSION['show_forgot_password'] = true; // Set forgot password flag on first failure
             $errors['email'] = 'No account found with that email.';
             
-            // Append forgot password link if flag is set
-            if ($_SESSION['show_forgot_password']) {
-                $errors['email'] .= ' <a href="../forgot_password/forgotpas.php">Forgot Password?</a>';
-            }
+            // // Append forgot password link if flag is set
+            // if ($_SESSION['show_forgot_password']) {
+            //     $errors['email'] .= ' <a href="../forgot_password/forgotpas.php">Forgot Password?</a>';
+            // }
             
-            // Start cooldown after 5 attempts
-            if ($_SESSION['login_attempts'] >= 5) {
-                $_SESSION['cooldown_start'] = time();
-                $errors['password'] = 'Too many login attempts. Please wait ' . $cooldown_duration . ' seconds.';
-                // Keep forgot password link during cooldown
-                if ($_SESSION['show_forgot_password']) {
-                    $errors['password'] .= ' <a href="../forgot password/forgotpas.php">Forgot Password?</a>';
-                }
-            }
+            // // Start cooldown after 5 attempts
+            // if ($_SESSION['login_attempts'] >= 5) {
+            //     $_SESSION['cooldown_start'] = time();
+            //     $errors['password'] = 'Too many login attempts. Please wait ' . $cooldown_duration . ' seconds.';
+            //     // Keep forgot password link during cooldown
+            //     if ($_SESSION['show_forgot_password']) {
+            //         $errors['password'] .= ' <a href="../forgot password/forgotpas.php">Forgot Password?</a>';
+            //     }
+            // }
         }
         $stmt->close();
     }
