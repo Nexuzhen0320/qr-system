@@ -1,5 +1,4 @@
 <?php
-include '../database/db.php';
 session_start();
 
 // Prevent caching
@@ -8,52 +7,72 @@ header("Pragma: no-cache");
 header("Expires: 0");
 
 // Redirect if not logged in
-if (empty($_SESSION['status_Account']) || empty($_SESSION['email'])) {
+if (!isset($_SESSION['status_Account']) || !isset($_SESSION['email']) || $_SESSION['status_Account'] !== 'logged_in') {
     header("Location: ../index.php");
     exit();
 }
 
-// Fetch data
-$email = $_SESSION['email'];
-$stmt = $connection->prepare("SELECT user_id FROM data WHERE email = ?");
-$stmt->bind_param("s", $email);
-$stmt->execute();
-$result = $stmt->get_result();
-$user = $result->fetch_assoc();
-$user_id = $user['user_id'];
-$stmt->close();
+include '../database/db.php';
 
-// Check if user has submitted an appointment
-$stmt = $connection->prepare("SELECT * FROM appointments WHERE user_id = ?");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$appointment = $result->fetch_assoc();
-$stmt->close();
+try {
+    // Fetch user data
+    $email = $_SESSION['email'];
+    $stmt = $connection->prepare("SELECT user_id FROM data WHERE email = ?");
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $user = $result->fetch_assoc();
+    $user_id = $user['user_id'] ?? null;
+    $stmt->close();
 
-// Redirect to fillupform.php if no appointment exists
-if (!$appointment) {
-    header("Location: ../fillupform/fillupform.php");
-    exit();
-}
-
-// Validate profile photo
-$is_valid_photo = false;
-$profile_photo = $appointment['profile_photo'] ?? '';
-$debug_log = [];
-
-if ($profile_photo) {
-    // Check if the profile photo is a valid base64-encoded image
-    if (preg_match('/^data:image\/(jpeg|png);base64,/', $profile_photo)) {
-        $is_valid_photo = true;
-    } else {
-        $debug_log[] = "Profile photo is not a valid base64 image: '$profile_photo'";
+    if (!$user_id) {
+        header("Location: ../index.php");
+        exit();
     }
-} else {
-    $debug_log[] = "Profile photo is empty or not set.";
-}
 
-$connection->close();
+    // Check appointment
+    $stmt = $connection->prepare("SELECT * FROM appointments WHERE user_id = ?");
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $appointment = $result->fetch_assoc();
+    $stmt->close();
+
+    if (!$appointment) {
+        header("Location: ../fillupform/fillupform.php");
+        exit();
+    }
+
+    // Validate profile photo
+    $is_valid_photo = false;
+    $profile_photo = $appointment['profile_photo'] ?? $_SESSION['profilePhoto'] ?? '';
+    $debug_log = [];
+
+    // Define the base path for profile photos
+    $base_photo_path = '../dashboard/image/Profile_Photo/';
+    $relative_photo_url = './image/Profile_Photo/';
+
+    if ($profile_photo) {
+        // Normalize the path
+        $profile_photo = ltrim($profile_photo, '/\\');
+        $full_photo_path = $base_photo_path . basename($profile_photo);
+
+        // Check if the file exists
+        if (file_exists($full_photo_path) && is_file($full_photo_path)) {
+            $is_valid_photo = true;
+            $profile_photo_url = $relative_photo_url . basename($profile_photo);
+        } else {
+            $debug_log[] = "Profile photo file not found or invalid: '$full_photo_path'";
+        }
+    } else {
+        $debug_log[] = "Profile photo is empty or not set.";
+    }
+
+} catch (Exception $e) {
+    $debug_log[] = "Database error: " . $e->getMessage();
+} finally {
+    $connection->close();
+}
 ?>
 
 <!DOCTYPE html>
@@ -358,15 +377,14 @@ $connection->close();
             }
         }
     </style>
-    
 </head>
 <body>
     <div class="sidebar">
         <img src="../image/icons/logo1.ico" alt="Organization Logo" class="logo">
         <h2>Dashboard</h2>
-        <a href="../../dashboard/dashboard.php" class="active" aria-current="page">Dashboard</a>
-        <a href="../dashboard/profile/edit_profile.php">Edit Profile</a>
-        <a href="../logout/logout.php">Logout</a>
+        <a href="../dashboard.php" class="active" aria-current="page">Dashboard</a>
+        <a href="../dashboard/edit_profile/edit_profile.php">Edit Profile</a>
+        <a href="../logout.php">Logout</a>
     </div>
     <div class="main-content">
         <div class="dashboard-header">
@@ -374,55 +392,103 @@ $connection->close();
         </div>
         <div class="card">
             <h2>Your Appointment Details</h2>
-            <?php if ($is_valid_photo): ?>
-                <img src="<?= htmlspecialchars($profile_photo) ?>" alt="Profile Photo" class="profile-photo">
+            <?php if ($is_valid_photo && !empty($profile_photo_url)): ?>
+                <img src="<?php echo htmlspecialchars($profile_photo_url); ?>" alt="Profile Photo" class="profile-photo">
             <?php else: ?>
                 <div class="profile-placeholder">No Photo Available</div>
             <?php endif; ?>
             <div class="appointment-details">
-                <p><strong>Appointment ID:</strong> <?= htmlspecialchars($appointment['appointment_id']) ?></p>
-                <p><strong>Name:</strong> <?= htmlspecialchars($appointment['first_name'] . ' ' . ($appointment['middle_name'] ? $appointment['middle_name'] . ' ' : '') . $appointment['last_name']) ?></p>
-                <p><strong>Gender:</strong> <?= htmlspecialchars($appointment['gender'] === 'Other' ? $appointment['other_gender'] : $appointment['gender']) ?></p>
-                <p><strong>Date of Birth:</strong> <?= htmlspecialchars($appointment['birthdate']) ?></p>
-                <p><strong>Age:</strong> <?= htmlspecialchars($appointment['age']) ?></p>
-                <p><strong>Occupation:</strong> <?= htmlspecialchars($appointment['occupation']) ?></p>
-                <p><strong>Address:</strong> <?= htmlspecialchars($appointment['address']) ?></p>
-                <p><strong>Region:</strong> <?= htmlspecialchars($appointment['region']) ?></p>
-                <p><strong>Email:</strong> <?= htmlspecialchars($appointment['email']) ?></p>
-                <p><strong>Contact Number:</strong> +63<?= htmlspecialchars($appointment['contact']) ?></p>
-                <p><strong>Appointment Date:</strong> <?= htmlspecialchars($appointment['appointment_date']) ?></p>
-                <p><strong>Appointment Time:</strong> <?= htmlspecialchars($appointment['appointment_time']) ?></p>
-                <p><strong>Purpose:</strong> <?= htmlspecialchars($appointment['purpose']) ?></p>
-                <p><strong>Submitted On:</strong> <?= htmlspecialchars($appointment['created_at']) ?></p>
+                <p><strong>Appointment ID:</strong> <?php echo htmlspecialchars($appointment['appointment_id']); ?></p>
+                <p><strong>Name:</strong> <?php echo htmlspecialchars($appointment['first_name'] . ' ' . ($appointment['middle_name'] ? $appointment['middle_name'] . ' ' : '') . $appointment['last_name']); ?></p>
+                <p><strong>Gender:</strong> <?php echo htmlspecialchars($appointment['gender'] === 'Other' ? $appointment['other_gender'] : $appointment['gender']); ?></p>
+                <p><strong>Date of Birth:</strong> <?php echo htmlspecialchars($appointment['birthdate']); ?></p>
+                <p><strong>Age:</strong> <?php echo htmlspecialchars($appointment['age']); ?></p>
+                <p><strong>Occupation:</strong> <?php echo htmlspecialchars($appointment['occupation']); ?></p>
+                <p><strong>Address:</strong> <?php echo htmlspecialchars($appointment['address']); ?></p>
+                <p><strong>Region:</strong> <?php echo htmlspecialchars($appointment['region']); ?></p>
+                <p><strong>Email:</strong> <?php echo htmlspecialchars($appointment['email']); ?></p>
+                <p><strong>Contact Number:</strong> +63<?php echo htmlspecialchars($appointment['contact']); ?></p>
+                <p><strong>Appointment Date:</strong> <?php echo htmlspecialchars($appointment['appointment_date']); ?></p>
+                <p><strong>Appointment Time:</strong> <?php echo htmlspecialchars($appointment['appointment_time']); ?></p>
+                <p><strong>Purpose:</strong> <?php echo htmlspecialchars($appointment['purpose']); ?></p>
+                <p><strong>Submitted On:</strong> <?php echo htmlspecialchars($appointment['created_at']); ?></p>
             </div>
-            <!-- Debug Log -->
             <?php if (!empty($debug_log)): ?>
                 <div class="debug-log">
                     <h3>Debug Log:</h3>
                     <?php foreach ($debug_log as $log): ?>
-                        <p><?= htmlspecialchars($log) ?></p>
+                        <p><?php echo htmlspecialchars($log); ?></p>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
-            <div class="status-message status-<?= strtolower($appointment['status']) ?>">
-                Your appointment is <strong><?= htmlspecialchars($appointment['status']) ?></strong>.
-                <?php if ($appointment['status'] === 'Accepted'): ?>
-                    Please arrive on time for your appointment.
-                <?php elseif ($appointment['status'] === 'Declined'): ?>
-                    Please submit a new appointment or contact support.
-                <?php else: ?>
-                    We are reviewing your appointment. You will be notified soon.
-                <?php endif; ?>
+            <div class="status-message status-<?php echo strtolower($appointment['status']); ?>">
+                Your appointment is <strong><?php echo htmlspecialchars($appointment['status']); ?></strong>.
+                <?php
+                switch ($appointment['status']) {
+                    case 'Accepted':
+                        echo 'Please arrive on time for your appointment.';
+                        break;
+                    case 'Declined':
+                        echo 'Please submit a new appointment or contact support.';
+                        break;
+                    default:
+                        echo 'We are reviewing your appointment. You will be notified soon.';
+                }
+                ?>
             </div>
         </div>
     </div>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const debugLog = document.querySelector(".debug-log");
-            if (debugLog && debugLog.textContent) {
-                debugLog.style.display = "block";
+        // Prevent back button from showing cached page  ================= incase the user clicks back button
+        // window.addEventListener('pageshow', function(event) {
+        //     if (event.persisted || performance.getEntriesByType('navigation')[4].type === 'back_forward') {
+        //         fetch('./check_session.php', {
+        //             method: 'POST',
+        //             headers: {
+        //                 'Content-Type': 'application/json',
+        //                 'Cache-Control': 'no-cache'
+        //             }
+        //         })
+        //         .then(response => response.json())
+        //         .then(data => {
+        //             if (!data.logged_in) {
+        //                 window.location.replace('../index.php');
+        //             }
+        //         })
+        //         .catch(error => {
+        //             console.error('Session check failed:', error);
+        //             window.location.replace('../index.php');
+        //         });
+        //     }
+        // });
+
+        // Periodically check session to ensure user is still logged in
+        document.addEventListener('DOMContentLoaded', function() {
+            const debugLog = document.querySelector('.debug-log');
+            if (debugLog?.textContent.trim()) {
+                debugLog.style.display = 'block';
             }
+
+            setInterval(function() {
+                fetch('./check_session.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.logged_in) {
+                        window.location.replace('../index.php');
+                    }
+                })
+                .catch(error => {
+                    console.error('Periodic session check failed:', error);
+                    window.location.replace('../index.php');
+                });
+            }, 30000); // Check every 30 seconds
         });
     </script>
 </body>

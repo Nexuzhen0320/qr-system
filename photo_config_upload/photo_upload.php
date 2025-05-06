@@ -20,6 +20,14 @@ $error = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profilePhoto'])) {
     $file = $_FILES['profilePhoto'];
     $validTypes = ['image/jpeg'];
+    $uploadDir = '../dashboard/image/Profile_Photo/';
+    $fileName = uniqid('profile_') . '.jpg';
+    $uploadPath = $uploadDir . $fileName;
+
+    // Create upload directory if it doesn't exist
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
+    }
 
     // Validate file type and upload errors
     if (!in_array($file['type'], $validTypes)) {
@@ -44,27 +52,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profilePhoto'])) {
         } elseif ($imageInfo[0] < 180 || $imageInfo[1] < 180 || abs($imageInfo[0] - $imageInfo[1]) > 20) {
             $error = "Image must be approximately 2x2 inches (~192x192 pixels at 96 DPI).";
         } else {
-            // Attempt server-side compression if GD is available
+            // Attempt server-side compression and save to folder
             if (extension_loaded('gd') && function_exists('imagecreatefromjpeg')) {
                 $image = @imagecreatefromjpeg($file['tmp_name']);
                 if ($image === false) {
                     $error = "Failed to process image. Try another file.";
                 } else {
-                    ob_start();
-                    imagejpeg($image, null, 75);
-                    $compressedData = ob_get_clean();
-                    imagedestroy($image);
-                    $dataUrl = 'data:image/jpeg;base64,' . base64_encode($compressedData);
-                    $_SESSION['profilePhoto'] = $dataUrl;
-                    header("Location: ../photo config upload/photo_upload.php");
-                    exit();
+                    // Save compressed image to folder
+                    if (imagejpeg($image, $uploadPath, 75)) {
+                        imagedestroy($image);
+                        $_SESSION['profilePhoto'] = $uploadPath;
+                        header("Location: ../photo config upload/photo_upload.php");
+                        exit();
+                    } else {
+                        imagedestroy($image);
+                        $error = "Failed to save image to server.";
+                    }
                 }
             } else {
-                // Fallback: Store client-side compressed image
+                // Fallback: Save client-side compressed image to folder
                 if (!empty($_POST['compressedImage'])) {
-                    $_SESSION['profilePhoto'] = $_POST['compressedImage'];
-                    header("Location: ../photo config upload/photo_upload.php");
-                    exit();
+                    $data = $_POST['compressedImage'];
+                    // Remove data URI scheme prefix
+                    $data = str_replace('data:image/jpeg;base64,', '', $data);
+                    $data = base64_decode($data);
+                    if (file_put_contents($uploadPath, $data)) {
+                        $_SESSION['profilePhoto'] = $uploadPath;
+                        header("Location: ../photo config upload/photo_upload.php");
+                        exit();
+                    } else {
+                        $error = "Failed to save compressed image to server.";
+                    }
                 } else {
                     $error = "Server image processing unavailable. Ensure client-side compression is enabled.";
                 }
@@ -75,6 +93,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profilePhoto'])) {
 
 // Handle photo removal
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['removePhoto'])) {
+    if (!empty($_SESSION['profilePhoto']) && file_exists($_SESSION['profilePhoto'])) {
+        unlink($_SESSION['profilePhoto']); // Delete the file from the server
+    }
     unset($_SESSION['profilePhoto']);
     header("Location: ../photo config upload/photo_upload.php");
     exit();

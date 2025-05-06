@@ -565,7 +565,7 @@ $connection->close();
                             <span>No Photo Uploaded</span>
                         <?php endif; ?>
                     </div>
-                    <a href="../photo config upload/photo_upload.php" class="upload-button" aria-label="Upload profile photo">Upload Photo</a>
+                    <a href="../photo_config_upload/photo_upload.php" class="upload-button" aria-label="Upload profile photo">Upload Photo</a>
                     <div class="photo-upload-note">Supports: JPG, JPEG (Max 2MB)</div>
                 </div>
                 <span class="error" id="myFile-error"><?php echo $errors['myFile'] ?? ''; ?></span>

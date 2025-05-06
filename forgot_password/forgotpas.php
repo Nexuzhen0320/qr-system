@@ -1,7 +1,7 @@
 <?php
 session_start();
 ob_start();
-include '../smtp configuration/smtp2goconfig.php';
+include '../smtp_configuration/smtp2goconfig.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -16,6 +16,35 @@ $error_message = '';
 $success_message = '';
 $session_expired = false;
 
+// Cooldown for resending OTP (60 seconds)
+$otp_resend_cooldown = 60;
+
+// Function to send OTP
+function sendOtp($email, $otp) {
+    global $smtpHost, $smtpUsername, $smtpPassword, $smtpPort, $fromEmail, $fromName;
+    try {
+        $mail = new PHPMailer(true);
+        $mail->isSMTP();
+        $mail->Host = $smtpHost;
+        $mail->SMTPAuth = true;
+        $mail->Username = $smtpUsername;
+        $mail->Password = $smtpPassword;
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = $smtpPort;
+
+        $mail->setFrom($fromEmail, $fromName);
+        $mail->addAddress($email);
+        $mail->isHTML(true);
+        $mail->Subject = 'Password Reset OTP';
+        $mail->Body = "<h2>Your OTP Code is: <strong>$otp</strong></h2><p>This code expires in 3 minutes.</p><p>Please do not share this code with anyone.</p><p>If you did not request this code, please ignore this email.</p><h2>Residences System</h2>";
+
+        $mail->send();
+        return true;
+    } catch (Exception $e) {
+        return 'Failed to send OTP: ' . $mail->ErrorInfo;
+    }
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['step']) && $_POST['step'] === 'request_otp') {
         // Step 1: Request OTP
@@ -23,6 +52,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $error_message = 'Please enter a valid email address.';
+        } elseif (isset($_SESSION['last_login_email']) && $email !== $_SESSION['last_login_email']) {
+            $error_message = 'Email does not match the one used in the login attempt.';
         } else {
             // Check if email exists
             $check_sql = "SELECT COUNT(*) FROM data WHERE email = ?";
@@ -41,30 +72,45 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION['forgot_email'] = $email;
                 $_SESSION['forgot_otp'] = $otp;
                 $_SESSION['forgot_otp_time'] = time();
+                $_SESSION['otp_resend_cooldown'] = time(); // Start cooldown
 
-                // Send OTP via email
-                try {
-                    $mail = new PHPMailer(true);
-                    $mail->isSMTP();
-                    $mail->Host = $smtpHost;
-                    $mail->SMTPAuth = true;
-                    $mail->Username = $smtpUsername;
-                    $mail->Password = $smtpPassword;
-                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                    $mail->Port = $smtpPort;
-
-                    $mail->setFrom($fromEmail, $fromName);
-                    $mail->addAddress($email);
-                    $mail->isHTML(true);
-                    $mail->Subject = 'Password Reset OTP';
-                    $mail->Body = "<h2>Your OTP Code is: <strong>$otp</strong></h2><p>This code expires in 3 minutes.</p><p>Please do not share this code with anyone.</p><p>If you did not request this code, please ignore this email.</p><h2>Residences System</h2>";
-
-                    $mail->send();
+                // Send OTP
+                $send_result = sendOtp($email, $otp);
+                if ($send_result === true) {
                     $success_message = 'OTP has been sent to your email.';
                     $_SESSION['forgot_step'] = 'verify_otp';
-                } catch (Exception $e) {
-                    $error_message = 'Failed to send OTP: ' . $mail->ErrorInfo;
-                    unset($_SESSION['forgot_email'], $_SESSION['forgot_otp'], $_SESSION['forgot_otp_time']);
+                } else {
+                    $error_message = $send_result;
+                    unset($_SESSION['forgot_email'], $_SESSION['forgot_otp'], $_SESSION['forgot_otp_time'], $_SESSION['otp_resend_cooldown']);
+                }
+            }
+        }
+    } elseif (isset($_POST['step']) && $_POST['step'] === 'resend_otp') {
+        // Step: Resend OTP
+        $email = $_SESSION['forgot_email'] ?? '';
+
+        if (empty($email)) {
+            $session_expired = true;
+        } else {
+            // Check cooldown
+            $elapsed_time = time() - ($_SESSION['otp_resend_cooldown'] ?? 0);
+            if ($elapsed_time < $otp_resend_cooldown) {
+                $remaining_time = $otp_resend_cooldown - $elapsed_time;
+                $error_message = "Please wait $remaining_time seconds before resending OTP.";
+            } else {
+                // Generate new OTP
+                $otp = sprintf("%06d", mt_rand(100000, 999999));
+                $_SESSION['forgot_otp'] = $otp;
+                $_SESSION['forgot_otp_time'] = time();
+                $_SESSION['otp_resend_cooldown'] = time(); // Reset cooldown
+
+                // Send OTP
+                $send_result = sendOtp($email, $otp);
+                if ($send_result === true) {
+                    $success_message = 'New OTP has been sent to your email.';
+                } else {
+                    $error_message = $send_result;
+                    unset($_SESSION['forgot_otp'], $_SESSION['forgot_otp_time'], $_SESSION['otp_resend_cooldown']);
                 }
             }
         }
@@ -77,7 +123,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $session_expired = true;
         } elseif ((time() - ($_SESSION['forgot_otp_time'] ?? 0)) > 180) {
             $error_message = 'OTP has expired. Please request a new one.';
-            session_destroy();
+            unset($_SESSION['forgot_otp'], $_SESSION['forgot_otp_time'], $_SESSION['otp_resend_cooldown']);
         } elseif ($user_otp == $_SESSION['forgot_otp']) {
             $_SESSION['forgot_step'] = 'reset_password';
         } else {
@@ -111,6 +157,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
             $stmt->close();
         }
+    }
+}
+
+// Calculate remaining cooldown time for JavaScript
+$cooldown_remaining = 0;
+if (isset($_SESSION['otp_resend_cooldown']) && $_SESSION['forgot_step'] === 'verify_otp') {
+    $elapsed_time = time() - $_SESSION['otp_resend_cooldown'];
+    if ($elapsed_time < $otp_resend_cooldown) {
+        $cooldown_remaining = $otp_resend_cooldown - $elapsed_time;
     }
 }
 ?>
@@ -282,6 +337,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             transform: translateY(-2px);
         }
 
+        .resend-link {
+            display: inline-block;
+            margin-top: 10px;
+            color: #007bff;
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .resend-link.disabled {
+            color: #666;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .resend-link:hover:not(.disabled) {
+            text-decoration: underline;
+        }
+
+        .cooldown-message {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+
         @keyframes fadeIn {
             0% { opacity: 0; transform: translateY(-10px); }
             100% { opacity: 1; transform: translateY(0); }
@@ -369,6 +449,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             .modal-content i {
                 font-size: 40px;
             }
+
+            .resend-link,
+            .cooldown-message {
+                font-size: 12px;
+            }
         }
     </style>
 </head>
@@ -395,7 +480,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </div>
                 <div class="error-message" id="password-error"></div>
                 <button type="submit">Reset Password <i class='bx bx-right-arrow-alt'></i></button>
-                <a href="index.php" class="back-link">Back to Login</a>
+                <a href="../index.php" class="back-link">Back to Login</a>
             </form>
         <?php elseif (isset($_SESSION['forgot_step']) && $_SESSION['forgot_step'] === 'verify_otp'): ?>
             <!-- Step 2: Verify OTP Form -->
@@ -407,7 +492,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </div>
                 <div class="error-message" id="otp-error"></div>
                 <button type="submit">Verify OTP <i class='bx bx-right-arrow-alt'></i></button>
+                <a href="#" class="resend-link <?php echo $cooldown_remaining > 0 ? 'disabled' : ''; ?>" id="resend-otp">Resend OTP</a>
+                <div class="cooldown-message" id="cooldown-message" style="<?php echo $cooldown_remaining > 0 ? '' : 'display: none;'; ?>">
+                    Resend available in <span id="cooldown-timer"><?php echo $cooldown_remaining; ?></span> seconds
+                </div>
                 <a href="../index.php" class="back-link">Back to Login</a>
+            </form>
+            <form action="" method="POST" id="resendOtpForm" style="display: none;">
+                <input type="hidden" name="step" value="resend_otp">
             </form>
         <?php else: ?>
             <!-- Step 1: Request OTP Form -->
@@ -440,6 +532,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         const requestOtpForm = document.getElementById("requestOtpForm");
         const verifyOtpForm = document.getElementById("verifyOtpForm");
         const resetPasswordForm = document.getElementById("resetPasswordForm");
+        const resendOtpForm = document.getElementById("resendOtpForm");
+        const resendLink = document.getElementById("resend-otp");
+        const cooldownMessage = document.getElementById("cooldown-message");
+        const cooldownTimer = document.getElementById("cooldown-timer");
 
         if (requestOtpForm) {
             const emailInput = document.getElementById("email");
@@ -470,6 +566,34 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     e.preventDefault();
                 }
             });
+
+            if (resendLink) {
+                resendLink.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    if (!resendLink.classList.contains("disabled")) {
+                        resendOtpForm.submit();
+                    }
+                });
+            }
+
+            // Handle cooldown timer
+            let remainingTime = <?php echo $cooldown_remaining; ?>;
+            if (remainingTime > 0) {
+                resendLink.classList.add("disabled");
+                cooldownMessage.style.display = "block";
+
+                function updateCooldown() {
+                    if (remainingTime <= 0) {
+                        resendLink.classList.remove("disabled");
+                        cooldownMessage.style.display = "none";
+                        return;
+                    }
+                    cooldownTimer.textContent = remainingTime;
+                    remainingTime--;
+                    setTimeout(updateCooldown, 1000);
+                }
+                updateCooldown();
+            }
         }
 
         if (resetPasswordForm) {

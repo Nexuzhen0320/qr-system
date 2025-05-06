@@ -2,6 +2,17 @@
 include './database/db.php';
 session_start();
 
+// Prevent caching
+header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
+
+// Clear session if not logged in to prevent stale data
+if (!isset($_SESSION['status_Account']) || $_SESSION['status_Account'] !== 'logged_in') {
+    $_SESSION = [];
+    session_regenerate_id(true);
+}
+
 // Initialize login attempts, cooldown, and forgot password flag if not set
 if (!isset($_SESSION['login_attempts'])) {
     $_SESSION['login_attempts'] = 0;
@@ -39,78 +50,78 @@ if ($_SESSION['login_attempts'] >= 5 && $_SESSION['cooldown_start'] > 0) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login']) && !$is_cooldown) {
     $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
+    $_SESSION['last_login_email'] = $email; // Store email for forgot password validation
     $password = $_POST['password'];
 
     if (empty($email) || empty($password)) {
         $errors['email'] = empty($email) ? 'Email is required.' : '';
         $errors['password'] = empty($password) ? 'Password is required.' : '';
     } else {
-        $stmt = $connection->prepare("SELECT * FROM data WHERE email = ?");
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        try {
+            $stmt = $connection->prepare("SELECT * FROM data WHERE email = ?");
+            if (!$stmt) {
+                throw new Exception("Database prepare failed: " . $connection->error);
+            }
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            $result = $stmt->get_result();
 
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            if (password_verify($password, $row['password'])) {
-                // Successful login, reset attempts, cooldown, and forgot password flag
-                $_SESSION['login_attempts'] = 0;
-                $_SESSION['cooldown_start'] = 0;
-                $_SESSION['show_forgot_password'] = false;
-                $_SESSION['email'] = $email;
-                $_SESSION['status_Account'] = $row['status_Account'];
-                $_SESSION['verify_otp'] = $row['verify_otp'];
+            if ($result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                if (password_verify($password, $row['password'])) {
+                    // Successful login
+                    session_regenerate_id(true); // Regenerate session ID for security
+                    $_SESSION['login_attempts'] = 0;
+                    $_SESSION['cooldown_start'] = 0;
+                    $_SESSION['show_forgot_password'] = false;
+                    unset($_SESSION['last_login_email']);
+                    $_SESSION['email'] = $email;
+                    $_SESSION['status_Account'] = 'logged_in'; // Set to match dashboard.php
+                    $_SESSION['verify_otp'] = $row['verify_otp'];
 
-                if ($row['status_Account'] === 'verified') {
-                    header("Location: ./dashboard/dashboard.php");
-                    exit;
+                    if ($row['status_Account'] === 'verified') {
+                        header("Location: ./dashboard/dashboard.php");
+                        exit;
+                    } else {
+                        header("Location: ./authentication/verify.php");
+                        exit;
+                    }
                 } else {
-                    header("Location: ./authentication/verify.php");
-                    exit;
+                    // Failed attempt
+                    $_SESSION['login_attempts']++;
+                    $_SESSION['show_forgot_password'] = true;
+                    $errors['password'] = 'Invalid Email or Password. Please try again.';
+                    if ($_SESSION['show_forgot_password']) {
+                        $errors['password'] .= ' <a href="./forgot_password/forgotpas.php">Forgot Password?</a>';
+                    }
+                    if ($_SESSION['login_attempts'] >= 5) {
+                        $_SESSION['cooldown_start'] = time();
+                        $errors['password'] = 'Too many login attempts. Please wait ' . $cooldown_duration . ' seconds.';
+                        if ($_SESSION['show_forgot_password']) {
+                            $errors['password'] .= ' <a href="./forgot_password/forgotpas.php">Forgot Password?</a>';
+                        }
+                    }
                 }
             } else {
                 // Failed attempt
                 $_SESSION['login_attempts']++;
-                $_SESSION['show_forgot_password'] = true; // Set forgot password flag on first failure
-                $errors['password'] = 'Invalid Email or Password. Please try again.';
-                
-                // Append forgot password link if flag is set
+                $_SESSION['show_forgot_password'] = true;
+                $errors['email'] = 'No account found with that email.';
                 if ($_SESSION['show_forgot_password']) {
-                    $errors['password'] .= ' <a href="./forgot password/forgotpas.php">Forgot Password?</a>';
+                    $errors['email'] .= ' <a href="./forgot_password/forgotpas.php">Forgot Password?</a>';
                 }
-                
-                // Start cooldown after 5 attempts
                 if ($_SESSION['login_attempts'] >= 5) {
                     $_SESSION['cooldown_start'] = time();
                     $errors['password'] = 'Too many login attempts. Please wait ' . $cooldown_duration . ' seconds.';
-                    // Keep forgot password link during cooldown
                     if ($_SESSION['show_forgot_password']) {
-                        $errors['password'] .= ' <a href="./forgot password/forgotpas.php">Forgot Password?</a>';
+                        $errors['password'] .= ' <a href="./forgot_password/forgotpas.php">Forgot Password?</a>';
                     }
                 }
             }
-        } else {
-            // Failed attempt
-            $_SESSION['login_attempts']++;
-            $_SESSION['show_forgot_password'] = true; // Set forgot password flag on first failure
-            $errors['email'] = 'No account found with that email.';
-            
-            // // Append forgot password link if flag is set
-            // if ($_SESSION['show_forgot_password']) {
-            //     $errors['email'] .= ' <a href="../forgot_password/forgotpas.php">Forgot Password?</a>';
-            // }
-            
-            // // Start cooldown after 5 attempts
-            // if ($_SESSION['login_attempts'] >= 5) {
-            //     $_SESSION['cooldown_start'] = time();
-            //     $errors['password'] = 'Too many login attempts. Please wait ' . $cooldown_duration . ' seconds.';
-            //     // Keep forgot password link during cooldown
-            //     if ($_SESSION['show_forgot_password']) {
-            //         $errors['password'] .= ' <a href="../forgot password/forgotpas.php">Forgot Password?</a>';
-            //     }
-            // }
+            $stmt->close();
+        } catch (Exception $e) {
+            $errors['password'] = 'An error occurred: ' . htmlspecialchars($e->getMessage());
         }
-        $stmt->close();
     }
 }
 
@@ -122,6 +133,9 @@ $connection->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="./image/icons/logo1.ico">
     <title>Login</title>
@@ -177,7 +191,9 @@ $connection->close();
             font-size: 16px;
             color: #333;
             background: rgba(255, 255, 255, 0.5);
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            transition: border-color 0.3s
+
+ ease, box-shadow 0.3s ease;
         }
 
         .input-group input:focus {
@@ -341,7 +357,7 @@ $connection->close();
 
             let errorText = `Too many login attempts. Please wait ${remainingTime} seconds.`;
             <?php if ($_SESSION['show_forgot_password']): ?>
-            errorText += ' <a href="../forgot_password/forgotpas.php">Forgot Password?</a>';
+            errorText += ' <a href="./forgot_password/forgotpas.php">Forgot Password?</a>';
             <?php endif; ?>
             errorMessage.innerHTML = errorText;
             remainingTime--;
@@ -352,4 +368,4 @@ $connection->close();
         <?php endif; ?>
     </script>
 </body>
-</html> 
+</html>

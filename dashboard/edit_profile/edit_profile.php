@@ -13,6 +13,18 @@ if (empty($_SESSION['status_Account']) || empty($_SESSION['email'])) {
     exit();
 }
 
+// Define directory for profile photos
+const PROFILE_PHOTO_DIR = '../image/Profile_Photo/';
+const PROFILE_PHOTO_URL = '/system-new/dashboard/image/Profile_Photo/'; // Relative URL for HTML
+
+// Ensure directory exists and is writable
+if (!is_dir(PROFILE_PHOTO_DIR)) {
+    mkdir(PROFILE_PHOTO_DIR, 0755, true);
+}
+if (!is_writable(PROFILE_PHOTO_DIR)) {
+    chmod(PROFILE_PHOTO_DIR, 0755);
+}
+
 // Fetch user data
 $email = $_SESSION['email'];
 $stmt = $connection->prepare("SELECT user_id FROM data WHERE email = ?");
@@ -31,34 +43,57 @@ $result = $stmt->get_result();
 $user_info = $result->fetch_assoc();
 $stmt->close();
 
+// Initialize profile photo and validation
+$profile_photo = isset($user_info['profile_photo']) && !empty($user_info['profile_photo']) ? $user_info['profile_photo'] : '';
+// Handle legacy base64 data
+if ($profile_photo && str_starts_with($profile_photo, 'data:image/')) {
+    // Convert base64 to file (one-time migration)
+    $image_data = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $profile_photo));
+    $file_extension = strpos($profile_photo, 'image/jpeg') !== false ? 'jpg' : 'png';
+    $file_name = "profile_{$user['last_name']}_{$user['first_name']}." . $file_extension;
+    $file_path = PROFILE_PHOTO_DIR . $file_name;
+    file_put_contents($file_path, $image_data);
+    $profile_photo = PROFILE_PHOTO_URL . $file_name;
+    // Update database with new file path
+    $stmt = $connection->prepare("UPDATE user_information SET profile_photo = ? WHERE user_id = ?");
+    $stmt->bind_param("si", $profile_photo, $user_id);
+    $stmt->execute();
+    $stmt->close();
+}
+// Force "No Photo Available" if file doesn't exist
+if (!empty($profile_photo) && !file_exists(PROFILE_PHOTO_DIR . basename($profile_photo))) {
+    $profile_photo = '';
+}
+$is_valid_photo = !empty($profile_photo) && file_exists(PROFILE_PHOTO_DIR . basename($profile_photo));
+
 $errors = [];
 $success = '';
 $debug_log = []; // For debugging purposes
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Sanitize and validate input
-    $first_name = filter_input(INPUT_POST, 'first_name', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-    $last_name = filter_input(INPUT_POST, 'last_name', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-    $middle_name = filter_input(INPUT_POST, 'middle_name', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-    $gender = filter_input(INPUT_POST, 'gender', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-    $other_gender = filter_input(INPUT_POST, 'other_gender', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-    $birthdate = filter_input(INPUT_POST, 'birthdate', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-    // Explicitly sanitize occupation as a string
-    $occupation = filter_input(INPUT_POST, 'occupation', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-    $address = filter_input(INPUT_POST, 'address', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-    $region = filter_input(INPUT_POST, 'region', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-    $contact = filter_input(INPUT_POST, 'contact', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-    $profile_photo = $user_info['profile_photo'];
+    $first_name = htmlspecialchars(trim($_POST['first_name'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $last_name = htmlspecialchars(trim($_POST['last_name'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $middle_name = htmlspecialchars(trim($_POST['middle_name'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $gender = htmlspecialchars(trim($_POST['gender'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $other_gender = htmlspecialchars(trim($_POST['other_gender'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $birthdate = htmlspecialchars(trim($_POST['birthdate'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $occupation = htmlspecialchars(trim($_POST['occupation'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $address = htmlspecialchars(trim($_POST['address'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $region = htmlspecialchars(trim($_POST['region'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $contact = htmlspecialchars(trim($_POST['contact'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $profile_photo = isset($user_info['profile_photo']) && !empty($user_info['profile_photo']) ? $user_info['profile_photo'] : '';
 
-    // Debug: Log the raw occupation value
+    // Debug: Log the raw input values
     $debug_log[] = "Raw occupation value: '$occupation'";
+    $debug_log[] = "Profile photo initial value: '$profile_photo'";
 
     // Validate required fields
     if (empty($first_name) || empty($last_name) || empty($gender) || empty($birthdate) || empty($address) || empty($region) || empty($contact)) {
         $errors[] = "All required fields must be filled.";
     }
 
-    // Validate occupation explicitly as a non-empty string
+    // Validate occupation
     if (empty($occupation) || !is_string($occupation) || !preg_match('/^[a-zA-Z\s]+$/', $occupation)) {
         $errors[] = "Occupation must be a valid string (letters and spaces only).";
     }
@@ -81,13 +116,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!in_array($file['type'], $allowed_types)) {
             $errors[] = "Only JPEG or PNG images are allowed.";
+            $profile_photo = ''; // Reset to no photo on validation failure
         } elseif ($file['size'] > $max_size) {
             $errors[] = "Image size must not exceed 2MB.";
+            $profile_photo = ''; // Reset to no photo on validation failure
         } else {
-            $image = file_get_contents($file['tmp_name']);
-            $profile_photo = 'data:' . $file['type'] . ';base64,' . base64_encode($image);
+            // Generate unique file name
+            $file_extension = $file['type'] === 'image/jpeg' ? 'jpg' : 'png';
+            $file_name = "profile_{$last_name}_{$first_name}_" . uniqid() . ".{$file_extension}";
+            $file_path = PROFILE_PHOTO_DIR . $file_name;
+            $file_url = PROFILE_PHOTO_URL . $file_name;
+
+            // Move uploaded file
+            if (move_uploaded_file($file['tmp_name'], $file_path)) {
+                $profile_photo = $file_url;
+                $debug_log[] = "New profile photo uploaded: $file_url";
+            } else {
+                $errors[] = "Failed to upload profile photo.";
+                $profile_photo = ''; // Reset to no photo on upload failure
+            }
         }
     }
+
+    // Update $is_valid_photo for POST context
+    $is_valid_photo = !empty($profile_photo) && file_exists(PROFILE_PHOTO_DIR . basename($profile_photo));
 
     if (empty($errors)) {
         // Begin transaction
@@ -97,7 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Debug: Log the occupation before updating
             $debug_log[] = "Occupation before user_information update: '$occupation'";
 
-            // Update user information (ensure occupation is bound as a string with "s")
+            // Update user information
             $stmt = $connection->prepare("
                 UPDATE user_information 
                 SET first_name = ?, last_name = ?, middle_name = ?, gender = ?, other_gender = ?, 
@@ -113,7 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $other_gender,
                 $birthdate,
                 $age,
-                $occupation, // "s" ensures it's treated as a string
+                $occupation,
                 $address,
                 $region,
                 $contact,
@@ -122,11 +174,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
             $stmt->execute();
             $stmt->close();
-
-            // Debug: Log the occupation before appointments update
-            $debug_log[] = "Occupation before appointments update: '$occupation'";
-
-            // Update all appointments for the user (ensure occupation is bound as a string with "s")
+            
+            // Update all appointments for the user
             $stmt = $connection->prepare("
                 UPDATE appointments 
                 SET first_name = ?, last_name = ?, middle_name = ?, gender = ?, other_gender = ?, 
@@ -143,7 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $other_gender,
                 $birthdate,
                 $age,
-                $occupation, // "s" ensures it's treated as a string
+                $occupation,
                 $address,
                 $region,
                 $email,
@@ -156,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Commit transaction
             $connection->commit();
-            $success = "Profile and appointments updated successfully.";
+            $success = "Profile updated successfully.";
         } catch (Exception $e) {
             // Rollback transaction on error
             $connection->rollback();
@@ -182,7 +231,6 @@ $connection->close();
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
 
-        /* CSS Variables */
         :root {
             --primary-color: #003087;
             --primary-hover: #00205b;
@@ -196,7 +244,6 @@ $connection->close();
             --transition-speed: 0.3s;
         }
 
-        /* General Layout */
         * {
             margin: 0;
             padding: 0;
@@ -216,9 +263,7 @@ $connection->close();
         }
 
         @keyframes fadeIn {
-            to {
-                opacity: 1;
-            }
+            to { opacity: 1; }
         }
 
         .form-container {
@@ -235,10 +280,7 @@ $connection->close();
         }
 
         @keyframes cardAppear {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         h1 {
@@ -249,7 +291,6 @@ $connection->close();
             margin-bottom: 20px;
         }
 
-        /* Logo */
         .logo {
             width: 80px;
             height: auto;
@@ -262,11 +303,10 @@ $connection->close();
             transform: scale(1.1);
         }
 
-        /* Navbar */
         .navbar {
             display: flex;
             justify-content: center;
-            gap: 15px;
+            gap: 10em;
             margin-bottom: 20px;
             padding: 10px;
             background: var(--bg-light);
@@ -290,7 +330,6 @@ $connection->close();
             color: #fff;
         }
 
-        /* Form Layout */
         .form-group {
             margin-bottom: 15px;
         }
@@ -313,7 +352,6 @@ $connection->close();
             flex: 1;
         }
 
-        /* Form Elements */
         .label {
             display: block;
             font-size: 14px;
@@ -390,7 +428,6 @@ $connection->close();
             pointer-events: none;
         }
 
-        /* Photo Upload Section */
         .photo-upload-group {
             display: flex;
             flex-direction: column;
@@ -419,7 +456,7 @@ $connection->close();
             transform: scale(1.05);
         }
 
-        .photo-preview {
+        .profile-photo {
             position: absolute;
             top: 0;
             left: 0;
@@ -427,11 +464,6 @@ $connection->close();
             height: 100%;
             border-radius: 4px;
             object-fit: cover;
-            display: block;
-        }
-
-        .photo-preview.hidden {
-            display: none;
         }
 
         .photo-upload-note {
@@ -440,7 +472,6 @@ $connection->close();
             margin-top: 5px;
         }
 
-        /* Buttons */
         .submit-btn {
             background: var(--primary-color);
             color: #fff;
@@ -460,7 +491,6 @@ $connection->close();
             background: var(--primary-hover);
         }
 
-        /* Feedback Messages */
         .error-message,
         .success-message {
             font-size: 13px;
@@ -497,7 +527,6 @@ $connection->close();
             display: none;
         }
 
-        /* Debug Section */
         .debug-log {
             font-size: 12px;
             color: #555;
@@ -508,7 +537,6 @@ $connection->close();
             display: none;
         }
 
-        /* Media Queries for Responsiveness */
         @media (max-width: 768px) {
             .form-container {
                 padding: 20px;
@@ -530,7 +558,7 @@ $connection->close();
             }
 
             .photo-placeholder,
-            .photo-preview {
+            .profile-photo {
                 width: 150px;
                 height: 150px;
             }
@@ -583,7 +611,7 @@ $connection->close();
             }
 
             .photo-placeholder,
-            .photo-preview {
+            .profile-photo {
                 width: 120px;
                 height: 120px;
             }
@@ -604,7 +632,6 @@ $connection->close();
             }
         }
 
-        /* Accessibility */
         .submit-btn:focus {
             outline: 2px solid var(--primary-color);
             outline-offset: 2px;
@@ -622,22 +649,22 @@ $connection->close();
         <nav class="navbar">
             <a href="../../dashboard/dashboard.php">Dashboard</a>
             <a href="../../profile/edit_profile.php" class="active" aria-current="page">Edit Profile</a>
-            <a href="../../logout/logout.php">Logout</a>
+            <!-- <a href="../logout.php">Logout</a> -->
         </nav>
 
-        <form method="POST" enctype="multipart/form-data" aria-label="Edit Profile Form">
+        <form method="POST" enctype="multipart/form-data" aria-label="Edit Profile Form" id="profileForm">
             <!-- Photo Upload Section -->
             <div class="form-group">
                 <label for="profile_photo" class="label required">Profile Photo (JPG/JPEG, max 2MB)</label>
                 <div class="photo-upload-group">
                     <div class="photo-placeholder" id="profilePhotoPreview">
-                        <img id="profilePhotoImg" class="photo-preview <?php echo empty($user_info['profile_photo']) ? 'hidden' : ''; ?>" src="<?php echo htmlspecialchars($user_info['profile_photo'] ?? ''); ?>" alt="Profile Photo Preview" aria-hidden="<?php echo empty($user_info['profile_photo']) ? 'true' : 'false'; ?>">
-                        <?php if (empty($user_info['profile_photo'])): ?>
-                            <span>No Photo Uploaded</span>
+                        <div class="profile-placeholder" id="photoPlaceholder">No Photo Available</div>
+                        <?php if (!empty($profile_photo)): ?>
+                            <img src="<?php echo htmlspecialchars(PROFILE_PHOTO_URL . basename($profile_photo)); ?>" alt="Profile Photo" class="profile-photo" id="existingPhoto">
                         <?php endif; ?>
                     </div>
-                    <input type="file" id="profile_photo" name="profile_photo" accept="image/jpeg,image/png">
-                    <div class="photo-upload-note">Supports: JPG, JPEG, PNG (Max 2MB)</div>
+                    <input type="file" id="profile_photo" name="profile_photo" accept="image/jpeg,image/jpg">
+                    <div class="photo-upload-note">Supports: JPG, JPEG, (Max 2MB)</div>
                 </div>
             </div>
 
@@ -745,8 +772,27 @@ $connection->close();
             const occupationInput = document.getElementById("occupation");
             const occupationError = document.getElementById("occupation-error");
             const profilePhotoInput = document.getElementById("profile_photo");
-            const profilePhotoImg = document.getElementById("profilePhotoImg");
             const profilePhotoPreview = document.getElementById("profilePhotoPreview");
+            const profileForm = document.getElementById("profileForm");
+
+            // Initialize profile photo preview with "No Photo Available" as default
+            let placeholder = profilePhotoPreview.querySelector(".profile-placeholder");
+            if (!placeholder) {
+                placeholder = document.createElement("div");
+                placeholder.classList.add("profile-placeholder");
+                placeholder.id = "photoPlaceholder";
+                placeholder.textContent = "No Photo Available";
+                profilePhotoPreview.appendChild(placeholder);
+            }
+            placeholder.style.display = "flex";
+
+            const existingPhoto = profilePhotoPreview.querySelector(".profile-photo");
+            if (existingPhoto && !<?php echo json_encode($is_valid_photo); ?>) {
+                existingPhoto.remove();
+            } else if (existingPhoto) {
+                existingPhoto.style.display = "block";
+                placeholder.style.display = "none";
+            }
 
             // Toggle Other Gender Input
             function toggleOtherInput() {
@@ -760,8 +806,7 @@ $connection->close();
                 const birthdate = new Date(this.value);
                 const today = new Date();
                 let age = today.getFullYear() - birthdate.getFullYear();
-                const monthDiff = today.getMonth() - birthdate.getMonth();
-                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthdate.getDate())) {
+                if (today.getMonth() < birthdate.getMonth() || (today.getMonth() === birthdate.getMonth() && today.getDate() < birthdate.getDate())) {
                     age--;
                 }
                 ageInput.value = age >= 0 ? age : "";
@@ -784,18 +829,48 @@ $connection->close();
                 }
             });
 
-            // Preview Profile Photo
+            // Preview and revert Profile Photo on Upload
             profilePhotoInput.addEventListener("change", function(e) {
                 const file = e.target.files[0];
+                const img = profilePhotoPreview.querySelector(".profile-photo") || document.createElement("img");
+                let placeholder = profilePhotoPreview.querySelector(".profile-placeholder");
+
+                if (!placeholder) {
+                    placeholder = document.createElement("div");
+                    placeholder.classList.add("profile-placeholder");
+                    placeholder.id = "photoPlaceholder";
+                    placeholder.textContent = "No Photo Available";
+                    profilePhotoPreview.appendChild(placeholder);
+                }
+
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = function(event) {
-                        profilePhotoImg.src = event.target.result;
-                        profilePhotoImg.classList.remove("hidden");
-                        const noPhotoText = profilePhotoPreview.querySelector("span");
-                        if (noPhotoText) noPhotoText.remove();
+                        img.classList.add("profile-photo");
+                        img.alt = "Profile Photo";
+                        img.src = event.target.result;
+                        profilePhotoPreview.appendChild(img);
+                        img.style.display = "block";
+                        placeholder.style.display = "none";
+                    };
+                    reader.onerror = function() {
+                        img.remove();
+                        placeholder.style.display = "flex";
                     };
                     reader.readAsDataURL(file);
+                } else {
+                    if (img) img.remove();
+                    placeholder.style.display = "flex";
+                }
+            });
+
+            // Revert to "No Photo Available" if form submission fails
+            profileForm.addEventListener("submit", function(e) {
+                const img = profilePhotoPreview.querySelector(".profile-photo");
+                const placeholder = profilePhotoPreview.querySelector(".profile-placeholder");
+                if (img && <?php echo json_encode(!empty($errors)); ?>) {
+                    img.remove();
+                    placeholder.style.display = "flex";
                 }
             });
 
@@ -805,6 +880,11 @@ $connection->close();
             const debugLog = document.querySelector(".debug-log");
             if (successMessage && successMessage.textContent) {
                 successMessage.style.display = "block";
+                // Show alert and redirect after a delay
+                alert("Profile updated successfully!");
+                setTimeout(() => {
+                    window.location.href = "../../dashboard/dashboard.php";
+                }, 1000);
             }
             if (errorMessage && errorMessage.textContent) {
                 errorMessage.style.display = "block";
@@ -812,6 +892,15 @@ $connection->close();
             if (debugLog && debugLog.textContent) {
                 debugLog.style.display = "block";
             }
+
+            // Handle form submission to prevent multiple submissions
+            profileForm.addEventListener("submit", function(e) {
+                const submitButton = profileForm.querySelector(".submit-btn");
+                submitButton.disabled = true;
+                setTimeout(() => {
+                    submitButton.disabled = false;
+                }, 2000); // Re-enable after 2 seconds
+            });
         });
     </script>
 </body>

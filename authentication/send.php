@@ -1,7 +1,7 @@
 <?php
 session_start();
 ob_start();
-include '../smtp configuration/smtp2goconfig.php';
+include '../smtp_configuration/smtp2goconfig.php';
 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);

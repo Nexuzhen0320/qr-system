@@ -6,7 +6,7 @@ require '../phpmailer/src/Exception.php';
 require '../phpmailer/src/PHPMailer.php';
 require '../phpmailer/src/SMTP.php';
 include '../database/db.php';
-include '../smtp config/smtp2goconfig.php';
+include '../smtp_config/smtp2goconfig.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
