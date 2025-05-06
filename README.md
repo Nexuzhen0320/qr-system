@@ -4,11 +4,11 @@
   *    -> resendotp.php
   *    -> send.php
   *    -> verify.php
-  *    * smtp_configuration
-  *        -> smtp2goconfiguration.php
 
   * dashboard Folder
        -> dashboard.php
+       *edit profile
+         ->edit_profile.php
 
   * database Folder
         -> db.php
@@ -28,21 +28,24 @@
             -> logo.ico
             -> logo1.ico
 
-  * logout Folder
+  * logout Folder 
         -> logout.php
 
-  * photo_config_upload
+  * photo_config_upload Folder
         -> clear_photo.php
         -> photo_upload.php
 
-  * phpmailer
+  * phpmailer Folder
         -> unknow but important files
 
-  * registration
+  * registration Folder
         -> register.php
 
-  * session_check
+  * session_check Folder
         -> check_session.php
+
+  * smtp configuration Folder
+        -> smtp2goconfig.php
 
  # out side no Folders
 
