@@ -7,6 +7,33 @@ header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 header("Expires: 0");
 
+// Redirect to dashboard if already logged in
+if (isset($_SESSION['status_Account']) && $_SESSION['status_Account'] === 'logged_in' && isset($_SESSION['email'])) {
+    try {
+        $email = $_SESSION['email'];
+        $stmt = $connection->prepare("SELECT status_Account FROM data WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            if ($row['status_Account'] === 'verified') {
+                header("Location: ./dashboard/dashboard.php");
+                exit;
+            } else {
+                header("Location: ./authentication/verify.php");
+                exit;
+            }
+        }
+        $stmt->close();
+    } catch (Exception $e) {
+        // Log error if needed, but proceed to clear session
+    }
+    // If user not found or error, clear session
+    $_SESSION = [];
+    session_regenerate_id(true);
+}
+
 // Clear session if not logged in to prevent stale data
 if (!isset($_SESSION['status_Account']) || $_SESSION['status_Account'] !== 'logged_in') {
     $_SESSION = [];
@@ -76,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login']) && !$is_cool
                     $_SESSION['show_forgot_password'] = false;
                     unset($_SESSION['last_login_email']);
                     $_SESSION['email'] = $email;
-                    $_SESSION['status_Account'] = 'logged_in'; // Set to match dashboard.php
+                    $_SESSION['status_Account'] = 'logged_in';
                     $_SESSION['verify_otp'] = $row['verify_otp'];
 
                     if ($row['status_Account'] === 'verified') {
@@ -191,9 +218,7 @@ $connection->close();
             font-size: 16px;
             color: #333;
             background: rgba(255, 255, 255, 0.5);
-            transition: border-color 0.3s
-
- ease, box-shadow 0.3s ease;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
 
         .input-group input:focus {

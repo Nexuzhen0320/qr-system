@@ -401,26 +401,48 @@ try {
                 <p><strong>Appointment ID:</strong> <?php echo htmlspecialchars($appointment['appointment_id']); ?></p>
                 <p><strong>Name:</strong> <?php echo htmlspecialchars($appointment['first_name'] . ' ' . ($appointment['middle_name'] ? $appointment['middle_name'] . ' ' : '') . $appointment['last_name']); ?></p>
                 <p><strong>Gender:</strong> <?php echo htmlspecialchars($appointment['gender'] === 'Other' ? $appointment['other_gender'] : $appointment['gender']); ?></p>
-                <p><strong>Date of Birth:</strong> <?php echo htmlspecialchars($appointment['birthdate']); ?></p>
+                <p><strong>Date of Birth:</strong> 
+                    <?php 
+                        $birthdate = $appointment['birthdate'];
+                        $formatted_birthdate = date("F j, Y", strtotime($birthdate));
+                        echo htmlspecialchars($formatted_birthdate); 
+                    ?>
+                </p>
                 <p><strong>Age:</strong> <?php echo htmlspecialchars($appointment['age']); ?></p>
                 <p><strong>Occupation:</strong> <?php echo htmlspecialchars($appointment['occupation']); ?></p>
                 <p><strong>Address:</strong> <?php echo htmlspecialchars($appointment['address']); ?></p>
                 <p><strong>Region:</strong> <?php echo htmlspecialchars($appointment['region']); ?></p>
                 <p><strong>Email:</strong> <?php echo htmlspecialchars($appointment['email']); ?></p>
                 <p><strong>Contact Number:</strong> +63<?php echo htmlspecialchars($appointment['contact']); ?></p>
-                <p><strong>Appointment Date:</strong> <?php echo htmlspecialchars($appointment['appointment_date']); ?></p>
-                <p><strong>Appointment Time:</strong> <?php echo htmlspecialchars($appointment['appointment_time']); ?></p>
+                <p><strong>Appointment Date:</strong> 
+                    <?php 
+                        $appointment_date = $appointment['appointment_date'];
+                        $formatted_date = date("F j, Y", strtotime($appointment_date));
+                        echo htmlspecialchars($formatted_date); 
+                    ?>
+                </p>
+                <p><strong>Appointment Time:</strong> 
+                    <?php 
+                        $time_24hr = $appointment['appointment_time'];
+                        $time_12hr = date("g:i A", strtotime($time_24hr));
+                        echo htmlspecialchars($time_12hr); 
+                    ?>
+                </p>
                 <p><strong>Purpose:</strong> <?php echo htmlspecialchars($appointment['purpose']); ?></p>
-                <p><strong>Submitted On:</strong> <?php echo htmlspecialchars($appointment['created_at']); ?></p>
+                <p><strong>Submitted On:</strong> 
+                    <?php 
+                        $submitted_on = $appointment['created_at'];
+                        $formatted_submitted_on = date("F j, Y", strtotime($submitted_on));
+                        echo htmlspecialchars($formatted_submitted_on); 
+                    ?>
+                    <strong>Time:</strong>
+                    <?php 
+                        $time_on = $appointment['created_at'];
+                        $formatted_time_on = date('g:i A', strtotime($time_on));
+                        echo htmlspecialchars($formatted_time_on);
+                        ?>
+                </p>
             </div>
-            <?php if (!empty($debug_log)): ?>
-                <div class="debug-log">
-                    <h3>Debug Log:</h3>
-                    <?php foreach ($debug_log as $log): ?>
-                        <p><?php echo htmlspecialchars($log); ?></p>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
             <div class="status-message status-<?php echo strtolower($appointment['status']); ?>">
                 Your appointment is <strong><?php echo htmlspecialchars($appointment['status']); ?></strong>.
                 <?php
@@ -467,29 +489,25 @@ try {
         document.addEventListener('DOMContentLoaded', function() {
             const debugLog = document.querySelector('.debug-log');
             if (debugLog?.textContent.trim()) {
-                debugLog.style.display = 'block';
+            debugLog.style.display = 'block';
             }
-
-            setInterval(function() {
-                fetch('./check_session.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Cache-Control': 'no-cache'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (!data.logged_in) {
-                        window.location.replace('../index.php');
-                    }
-                })
-                .catch(error => {
-                    console.error('Periodic session check failed:', error);
-                    window.location.replace('../index.php');
-                });
-            }, 30000); // Check every 30 seconds
         });
+
+        
+
+        document.addEventListener('DOMContentLoaded', function() {
+    const debugLog = document.querySelector('.debug-log');
+    if (debugLog?.textContent.trim()) {
+        debugLog.style.display = 'block';
+    }
+
+    // Prevent back button issues by ensuring session is valid
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+            window.location.reload();
+        }
+    });
+});
     </script>
 </body>
 </html>
