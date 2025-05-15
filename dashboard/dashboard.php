@@ -48,24 +48,48 @@ try {
     $profile_photo = $appointment['profile_photo'] ?? $_SESSION['profilePhoto'] ?? '';
     $debug_log = [];
 
-    // Define the base path for profile photos
-    $base_photo_path = '../dashboard/image/Profile_Photo/';
-    $relative_photo_url = './image/Profile_Photo/';
+    // Define base paths
+    $base_server_path = '../ProfileImage/image/';
+    $base_relative_url = './image/';
 
     if ($profile_photo) {
-        // Normalize the path
+        // Normalize the stored path
         $profile_photo = ltrim($profile_photo, '/\\');
-        $full_photo_path = $base_photo_path . basename($profile_photo);
-
-        // Check if the file exists
+        // Convert relative path (e.g., ./image/Profile_Photo/abc123.jpg) to absolute server path
+        $full_photo_path = str_replace('./image/', $base_server_path, $profile_photo);
+        $debug_log[] = "Profile photo stored path: '$profile_photo', computed server path: '$full_photo_path'";
         if (file_exists($full_photo_path) && is_file($full_photo_path)) {
             $is_valid_photo = true;
-            $profile_photo_url = $relative_photo_url . basename($profile_photo);
+            // Use the stored relative path for display, adjusting for browser resolution
+            $profile_photo_url = str_replace('./image/', $base_relative_url, $profile_photo);
         } else {
             $debug_log[] = "Profile photo file not found or invalid: '$full_photo_path'";
         }
     } else {
         $debug_log[] = "Profile photo is empty or not set.";
+    }
+
+    // Validate ID photo
+    $is_valid_id_photo = false;
+    $id_photo = $appointment['id_photo'] ?? '';
+    $id_number = $appointment['id_number'] ?? '';
+
+    if ($id_photo) {
+        // Normalize the stored path
+        $id_photo = ltrim($id_photo, '/\\');
+        // Convert relative path (e.g., ./image/IdPhoto/id_123.jpg) to absolute server path
+        $full_id_photo_path = str_replace('../image/', $base_server_path, $id_photo);
+        $debug_log[] = "ID photo stored path: '$id_photo', computed server path: '$full_id_photo_path'";
+        if (file_exists($full_id_photo_path) && is_file($full_id_photo_path)) {
+            $is_valid_id_photo = true;
+            // Use the stored relative path for display, adjusting for browser resolution
+            $id_photo_url = str_replace('../image/', $base_relative_url, $id_photo);
+            $id_photo_url = str_replace('./image/', $base_relative_url, $id_photo);
+        } else {
+            $debug_log[] = "ID photo file not found or invalid: '$full_id_photo_path'";
+        }
+    } else {
+        $debug_log[] = "ID photo is empty or not set.";
     }
 
 } catch (Exception $e) {
@@ -119,9 +143,7 @@ try {
         }
 
         @keyframes fadeIn {
-            to {
-                opacity: 1;
-            }
+            to { opacity: 1; }
         }
 
         .sidebar {
@@ -224,10 +246,7 @@ try {
         }
 
         @keyframes cardAppear {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .card h2 {
@@ -264,10 +283,7 @@ try {
         }
 
         @keyframes statusPop {
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
+            to { opacity: 1; transform: scale(1); }
         }
 
         .status-pending {
@@ -285,12 +301,18 @@ try {
             color: var(--danger-color);
         }
 
+        .photo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
         .profile-photo {
             width: 120px;
             height: 120px;
             border-radius: 8px;
             object-fit: cover;
-            margin-bottom: 15px;
             border: 1px solid var(--border-color);
             transition: transform var(--transition-speed);
         }
@@ -310,12 +332,129 @@ try {
             align-items: center;
             font-size: 14px;
             color: var(--text-color);
-            margin-bottom: 15px;
             transition: transform var(--transition-speed);
         }
 
         .profile-placeholder:hover {
             transform: scale(1.05);
+        }
+
+        .view-id-btn {
+            background: var(--primary-color);
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background var(--transition-speed), transform var(--transition-speed);
+        }
+
+        .view-id-btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+
+        .view-id-btn:focus {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity var(--transition-speed);
+        }
+
+        .modal.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: var(--shadow);
+            position: relative;
+            transform: scale(0.8);
+            transition: transform var(--transition-speed);
+        }
+
+        .modal.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .modal-header h3 {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: color var(--transition-speed);
+        }
+
+        .close-btn:hover {
+            color: var(--primary-color);
+        }
+
+        .modal-body {
+            text-align: center;
+        }
+
+        .id-photo {
+            width: 200px;
+            height: 200px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid var(--border-color);
+            margin: 10px auto;
+            display: block;
+        }
+
+        .id-placeholder {
+            width: 200px;
+            height: 200px;
+            border-radius: 8px;
+            background: var(--secondary-color);
+            border: 1px solid var(--border-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            color: var(--text-color);
+            margin: 10px auto;
+        }
+
+        .id-number {
+            font-size: 16px;
+            color: var(--text-color);
+            margin: 10px 0;
         }
 
         .debug-log {
@@ -329,14 +468,8 @@ try {
         }
 
         @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         @media (max-width: 768px) {
@@ -361,6 +494,15 @@ try {
             .appointment-details {
                 grid-template-columns: 1fr;
             }
+
+            .photo-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .modal-content {
+                max-width: 90%;
+            }
         }
 
         @media (max-width: 576px) {
@@ -374,6 +516,12 @@ try {
             .main-content {
                 margin-left: 0;
                 width: 100%;
+            }
+
+            .id-photo,
+            .id-placeholder {
+                width: 150px;
+                height: 150px;
             }
         }
     </style>
@@ -392,13 +540,16 @@ try {
         </div>
         <div class="card">
             <h2>Your Appointment Details</h2>
-            <?php if ($is_valid_photo && !empty($profile_photo_url)): ?>
-                <img src="<?php echo htmlspecialchars($profile_photo_url); ?>" alt="Profile Photo" class="profile-photo">
-            <?php else: ?>
-                <div class="profile-placeholder">No Photo Available</div>
-            <?php endif; ?>
+            <div class="photo-container">
+                <?php if ($is_valid_photo && !empty($profile_photo_url)): ?>
+                    <img src="<?php echo htmlspecialchars($profile_photo_url); ?>" alt="Profile Photo" class="profile-photo">
+                <?php else: ?>
+                    <div class="profile-placeholder">No Photo Available</div>
+                <?php endif; ?>
+                <button class="view-id-btn" aria-label="View ID Details">View ID</button>
+            </div>
             <div class="appointment-details">
-                <p><strong>Appointment ID:</strong> <?php echo htmlspecialchars($appointment['appointment_id']); ?></p>
+                <p><strong>Appointment ID: #</strong> <?php echo htmlspecialchars($appointment['appointment_id']); ?></p>
                 <p><strong>Name:</strong> <?php echo htmlspecialchars($appointment['first_name'] . ' ' . ($appointment['middle_name'] ? $appointment['middle_name'] . ' ' : '') . $appointment['last_name']); ?></p>
                 <p><strong>Gender:</strong> <?php echo htmlspecialchars($appointment['gender'] === 'Other' ? $appointment['other_gender'] : $appointment['gender']); ?></p>
                 <p><strong>Date of Birth:</strong> 
@@ -440,7 +591,7 @@ try {
                         $time_on = $appointment['created_at'];
                         $formatted_time_on = date('g:i A', strtotime($time_on));
                         echo htmlspecialchars($formatted_time_on);
-                        ?>
+                    ?>
                 </p>
             </div>
             <div class="status-message status-<?php echo strtolower($appointment['status']); ?>">
@@ -461,53 +612,65 @@ try {
         </div>
     </div>
 
-    <script>
-        // Prevent back button from showing cached page  ================= incase the user clicks back button
-        // window.addEventListener('pageshow', function(event) {
-        //     if (event.persisted || performance.getEntriesByType('navigation')[4].type === 'back_forward') {
-        //         fetch('./check_session.php', {
-        //             method: 'POST',
-        //             headers: {
-        //                 'Content-Type': 'application/json',
-        //                 'Cache-Control': 'no-cache'
-        //             }
-        //         })
-        //         .then(response => response.json())
-        //         .then(data => {
-        //             if (!data.logged_in) {
-        //                 window.location.replace('../index.php');
-        //             }
-        //         })
-        //         .catch(error => {
-        //             console.error('Session check failed:', error);
-        //             window.location.replace('../index.php');
-        //         });
-        //     }
-        // });
+    <!-- Modal for ID Details -->
+    <div class="modal" id="idModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>ID Details</h3>
+                <button class="close-btn" aria-label="Close Modal">×</button>
+            </div>
+            <div class="modal-body">
+                <?php if ($is_valid_id_photo && !empty($id_photo_url)): ?>
+                    <img src="<?php echo htmlspecialchars($id_photo_url); ?>" alt="ID Photo" class="id-photo">
+                <?php else: ?>
+                    <div class="id-placeholder">No ID Photo Available</div>
+                <?php endif; ?>
+                <p class="id-number"><strong>ID Number:</strong> <?php echo htmlspecialchars($id_number ?: 'Not Provided'); ?></p>
+            </div>
+        </div>
+    </div>
 
-        // Periodically check session to ensure user is still logged in
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
             const debugLog = document.querySelector('.debug-log');
             if (debugLog?.textContent.trim()) {
-            debugLog.style.display = 'block';
+                debugLog.style.display = 'block';
             }
+
+            // Modal functionality
+            const viewIdBtn = document.querySelector('.view-id-btn');
+            const idModal = document.querySelector('#idModal');
+            const closeBtn = document.querySelector('.close-btn');
+
+            viewIdBtn.addEventListener('click', function() {
+                idModal.classList.add('show');
+            });
+
+            closeBtn.addEventListener('click', function() {
+                idModal.classList.remove('show');
+            });
+
+            // Close modal when clicking outside
+            idModal.addEventListener('click', function(e) {
+                if (e.target === idModal) {
+                    idModal.classList.remove('show');
+                }
+            });
+
+            // Close modal with Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && idModal.classList.contains('show')) {
+                    idModal.classList.remove('show');
+                }
+            });
+
+            // Prevent back button issues
+            window.addEventListener('pageshow', function(event) {
+                if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+                    window.location.reload();
+                }
+            });
         });
-
-        
-
-        document.addEventListener('DOMContentLoaded', function() {
-    const debugLog = document.querySelector('.debug-log');
-    if (debugLog?.textContent.trim()) {
-        debugLog.style.display = 'block';
-    }
-
-    // Prevent back button issues by ensuring session is valid
-    window.addEventListener('pageshow', function(event) {
-        if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
-            window.location.reload();
-        }
-    });
-});
     </script>
 </body>
 </html>

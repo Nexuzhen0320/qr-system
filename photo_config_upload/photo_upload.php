@@ -20,8 +20,8 @@ $error = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profilePhoto'])) {
     $file = $_FILES['profilePhoto'];
     $validTypes = ['image/jpeg'];
-    $uploadDir = '../dashboard/image/Profile_Photo/';
-    $fileName = uniqid('profile_') . '.jpg';
+    $uploadDir = '../ProfileImage/image/Profile_Photo/';
+    $fileName = uniqid('profile_{id}', true) . '.' . pathinfo($file['name'], PATHINFO_EXTENSION);
     $uploadPath = $uploadDir . $fileName;
 
     // Create upload directory if it doesn't exist
@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profilePhoto'])) {
                     if (imagejpeg($image, $uploadPath, 75)) {
                         imagedestroy($image);
                         $_SESSION['profilePhoto'] = $uploadPath;
-                        header("Location: ../photo config upload/photo_upload.php");
+                        header("Location: ../photo_config_upload/photo_upload.php");
                         exit();
                     } else {
                         imagedestroy($image);
@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profilePhoto'])) {
                     $data = base64_decode($data);
                     if (file_put_contents($uploadPath, $data)) {
                         $_SESSION['profilePhoto'] = $uploadPath;
-                        header("Location: ../photo config upload/photo_upload.php");
+                        header("Location: ../photo_config_upload/photo_upload.php");
                         exit();
                     } else {
                         $error = "Failed to save compressed image to server.";
@@ -97,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['removePhoto'])) {
         unlink($_SESSION['profilePhoto']); // Delete the file from the server
     }
     unset($_SESSION['profilePhoto']);
-    header("Location: ../photo config upload/photo_upload.php");
+    header("Location: ../photo_config_upload/photo_upload.php");
     exit();
 }
 ?>
@@ -363,7 +363,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['removePhoto'])) {
     <div class="form-container" role="main">
         <img src="../image/icons/logo1.ico" alt="Organization Logo" class="logo">
         <h1>Upload Profile Photo</h1>
-        <form id="photoUploadForm" action="../photo config upload/photo_upload.php" method="POST" enctype="multipart/form-data" aria-label="Profile Photo Upload Form">
+        <form id="photoUploadForm" action="../photo_config_upload/photo_upload.php" method="POST" enctype="multipart/form-data" aria-label="Profile Photo Upload Form">
             <input type="hidden" id="compressedImage" name="compressedImage">
             <div class="photo-preview-container">
                 <div class="photo-placeholder" id="photoPlaceholder">
