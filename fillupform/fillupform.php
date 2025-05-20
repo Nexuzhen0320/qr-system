@@ -417,7 +417,7 @@ $connection->close();
     <link rel="icon" type="image/x-icon" href="../image/icons/logo1.ico">
     <title>Registration Form</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap');
 
         :root {
             --primary-color: #1a3c6e;
@@ -429,7 +429,8 @@ $connection->close();
             --success-color: #2e7d32;
             --bg-color: #f8fafc;
             --white: #ffffff;
-            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            --input-bg: #fafafa;
         }
 
         * {
@@ -445,53 +446,56 @@ $connection->close();
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: 1.5rem;
         }
 
+        /* Form Container */
         .form-container {
             background: var(--white);
-            max-width: 700px;
+            max-width: 800px;
             width: 100%;
-            padding: 30px;
-            border-radius: 8px;
+            padding: 2rem;
+            border-radius: 12px;
             box-shadow: var(--shadow);
             border: 1px solid var(--border-color);
         }
 
+        /* Header */
         .form-header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 2rem;
         }
 
         .logo {
-            width: 80px;
+            width: 5rem;
             height: auto;
-            margin-bottom: 15px;
+            margin-bottom: 1rem;
         }
 
         h1 {
-            font-size: 24px;
+            font-size: 1.75rem;
             font-weight: 700;
             color: var(--text-color);
         }
 
+        /* Navigation */
         .navbar {
             display: flex;
             justify-content: center;
-            gap: 20px;
-            margin-bottom: 25px;
-            padding: 10px;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding: 0.75rem;
             background: var(--accent-color);
-            border-radius: 6px;
+            border-radius: 8px;
         }
 
         .navbar a {
             text-decoration: none;
             color: var(--text-color);
-            font-size: 14px;
+            font-size: 0.875rem;
             font-weight: 600;
-            padding: 8px 16px;
-            border-radius: 4px;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
             transition: background 0.3s, color 0.3s;
         }
 
@@ -501,42 +505,44 @@ $connection->close();
             color: var(--white);
         }
 
+        /* Form Sections */
         .form-section {
-            margin-bottom: 25px;
-            padding-bottom: 20px;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
             border-bottom: 1px solid var(--border-color);
         }
 
         .form-section h2 {
-            font-size: 18px;
+            font-size: 1.25rem;
             font-weight: 600;
             color: var(--primary-color);
-            margin-bottom: 15px;
+            margin-bottom: 1rem;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 1.25rem;
         }
 
         .form-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
         }
 
+        /* Labels and Inputs */
         .label {
             display: block;
-            font-size: 14px;
-            font-weight: 600;
+            font-size: 0.875rem;
+            font-weight: 500;
             color: var(--text-color);
-            margin-bottom: 8px;
+            margin-bottom: 0.5rem;
         }
 
         .label.required::after {
             content: '*';
             color: var(--error-color);
-            font-size: 12px;
-            margin-left: 4px;
+            font-size: 0.75rem;
+            margin-left: 0.25rem;
         }
 
         input[type="text"],
@@ -547,12 +553,12 @@ $connection->close();
         select,
         input[type="text"].flatpickr-input {
             width: 100%;
-            padding: 10px;
+            padding: 0.75rem;
             border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 14px;
+            border-radius: 6px;
+            font-size: 0.875rem;
             color: var(--text-color);
-            background: var(--white);
+            background: var(--input-bg);
             transition: border-color 0.3s, box-shadow 0.3s;
         }
 
@@ -566,7 +572,8 @@ $connection->close();
 
         select {
             appearance: none;
-            background: var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23333' viewBox='0 0 16 16'%3E%3Cpath d='M8 12L2 6h12l-6 6z'/%3E%3C/svg%3E") no-repeat right 10px center;
+            background: var(--input-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23333' viewBox='0 0 16 16'%3E%3Cpath d='M8 12L2 6h12l-6 6z'/%3E%3C/svg%3E") no-repeat right 0.75rem center;
+            padding-right: 2rem;
         }
 
         input[disabled] {
@@ -575,34 +582,39 @@ $connection->close();
             cursor: not-allowed;
         }
 
+        /* Contact Group */
         .contact-group {
             display: flex;
-            gap: 10px;
+            gap: 0.75rem;
+            align-items: center;
         }
 
         .contact-group input[type="text"]:first-child {
-            width: 60px;
+            width: 4rem;
             background: #f5f5f5;
             pointer-events: none;
+            border-radius: 6px;
         }
 
+        /* Photo Upload Section */
         .photo-upload-group {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 0.75rem;
+            align-items: flex-start;
         }
 
         .photo-placeholder {
             position: relative;
-            width: 192px;
-            height: 192px;
+            width: 12rem;
+            height: 12rem;
             background: var(--accent-color);
             border: 1px solid var(--border-color);
-            border-radius: 4px;
+            border-radius: 6px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 14px;
+            font-size: 0.875rem;
             color: #666;
         }
 
@@ -613,7 +625,7 @@ $connection->close();
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 4px;
+            border-radius: 6px;
             display: none;
         }
 
@@ -622,20 +634,22 @@ $connection->close();
         }
 
         .photo-upload-note {
-            font-size: 12px;
+            font-size: 0.75rem;
             color: #666;
         }
 
         .action-buttons {
             display: flex;
-            gap: 10px;
+            gap: 0.75rem;
+            flex-wrap: wrap;
         }
 
+        /* Buttons */
         .btn {
-            padding: 10px 20px;
+            padding: 0.75rem 1.5rem;
             border: none;
-            border-radius: 4px;
-            font-size: 14px;
+            border-radius: 6px;
+            font-size: 0.875rem;
             font-weight: 600;
             cursor: pointer;
             transition: background 0.3s, transform 0.2s;
@@ -662,12 +676,13 @@ $connection->close();
             transform: translateY(-1px);
         }
 
+        /* Messages and Feedback */
         .error-message,
         .success-message {
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
-            font-size: 14px;
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin: 0.75rem 0;
+            font-size: 0.875rem;
             text-align: center;
             display: none;
         }
@@ -686,20 +701,21 @@ $connection->close();
 
         .error {
             color: var(--error-color);
-            font-size: 12px;
-            margin-top: 6px;
+            font-size: 0.75rem;
+            margin-top: 0.375rem;
             display: none;
         }
 
+        /* Loading Spinner and Progress */
         .loading-spinner {
             display: none;
             border: 3px solid #e5e7eb;
             border-top: 3px solid var(--primary-color);
             border-radius: 50%;
-            width: 24px;
-            height: 24px;
+            width: 1.5rem;
+            height: 1.5rem;
             animation: spin 1s linear infinite;
-            margin: 10px auto;
+            margin: 0.75rem auto;
         }
 
         @keyframes spin {
@@ -707,6 +723,24 @@ $connection->close();
             100% { transform: rotate(360deg); }
         }
 
+        .progress-bar {
+            display: none;
+            width: 100%;
+            height: 0.25rem;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .progress-bar div {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0;
+            transition: width 0.3s ease;
+        }
+
+        /* Flatpickr Customization */
         .flatpickr-day.thursday {
             color: var(--text-color) !important;
             font-weight: 600;
@@ -723,45 +757,43 @@ $connection->close();
             border-color: var(--primary-color) !important;
         }
 
-        .progress-bar {
-            display: none;
-            width: 100%;
-            height: 4px;
-            background: #e5e7eb;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 8px;
+        .flatpickr-calendar {
+            font-size: 0.875rem;
         }
 
-        .progress-bar div {
-            height: 100%;
-            background: var(--primary-color);
-            width: 0;
-            transition: width 0.3s ease;
-        }
-
+        /* Debug Log */
         .debug-log {
-            font-size: 12px;
+            font-size: 0.75rem;
             color: #555;
             background: #f0f0f0;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin: 0.75rem 0;
             display: none;
         }
 
+        /* Accessibility */
+        button:focus,
+        a:focus,
+        input:focus,
+        select:focus {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+
+        /* Responsive Design */
         @media (max-width: 768px) {
             .form-container {
-                padding: 20px;
+                padding: 1.5rem;
                 max-width: 100%;
             }
 
             .logo {
-                width: 60px;
+                width: 4rem;
             }
 
             h1 {
-                font-size: 20px;
+                font-size: 1.5rem;
             }
 
             .form-row {
@@ -770,26 +802,57 @@ $connection->close();
 
             .photo-placeholder,
             .photo-preview {
-                width: 150px;
-                height: 150px;
+                width: 10rem;
+                height: 10rem;
             }
 
             .navbar {
                 flex-direction: column;
-                gap: 10px;
+                gap: 0.5rem;
+                padding: 0.5rem;
+            }
+
+            .navbar a {
+                padding: 0.5rem;
+                text-align: center;
             }
 
             .btn {
                 width: 100%;
             }
+
+            .contact-group {
+                flex-direction: column;
+            }
+
+            .contact-group input[type="text"]:first-child {
+                width: 100%;
+            }
+
+            .flatpickr-calendar {
+                width: 100% !important;
+                max-width: 300px;
+            }
         }
 
-        button:focus,
-        a:focus,
-        input:focus,
-        select:focus {
-            outline: 2px solid var(--primary-color);
-            outline-offset: 2px;
+        @media (max-width: 480px) {
+            .form-container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.25rem;
+            }
+
+            .form-section h2 {
+                font-size: 1rem;
+            }
+
+            .photo-placeholder,
+            .photo-preview {
+                width: 8rem;
+                height: 8rem;
+            }
         }
     </style>
 </head>
@@ -846,7 +909,7 @@ $connection->close();
                         <span class="error" id="idType-error"><?php echo htmlspecialchars($errors['idType'] ?? ''); ?></span>
                     </div>
                     <div class="form-group">
-                        <label \n                        <label for="idNumber" class="label required">ID Number</label>
+                        <label for="idNumber" class="label required">ID Number</label>
                         <input type="text" id="idNumber" name="idNumber" required autocomplete="off" aria-required="true" value="<?php echo htmlspecialchars($_SESSION['idNumber'] ?? ''); ?>" placeholder="Example: xxxx-xxxx-xxxx-xxxx" maxlength="50">
                         <span class="error" id="idNumber-error"><?php echo htmlspecialchars($errors['idNumber'] ?? ''); ?></span>
                     </div>
@@ -883,18 +946,18 @@ $connection->close();
                 <div class="form-row">
                     <div class="form-group">
                         <label for="lastName" class="label required">Last Name</label>
-                        <input type="text" id="lastName" name="lastName" required autocomplete="off" aria-required="true">
+                        <input type="text" id="lastName" name="lastName" required autocomplete="off" aria-required="true" placeholder="Enter your last name">
                         <span class="error" id="lastName-error"><?php echo htmlspecialchars($errors['lastName'] ?? ''); ?></span>
                     </div>
                     <div class="form-group">
                         <label for="firstName" class="label required">First Name</label>
-                        <input type="text" id="firstName" name="firstName" required autocomplete="off" aria-required="true">
+                        <input type="text" id="firstName" name="firstName" required autocomplete="off" aria-required="true" placeholder="Enter your first name">
                         <span class="error" id="firstName-error"><?php echo htmlspecialchars($errors['firstName'] ?? ''); ?></span>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="middleName" class="label">Middle Name (Optional)</label>
-                    <input type="text" id="middleName" name="middleName" autocomplete="off">
+                    <input type="text" id="middleName" name="middleName" autocomplete="off" placeholder="Enter your middle name">
                     <span class="error" id="middleName-error"><?php echo htmlspecialchars($errors['middleName'] ?? ''); ?></span>
                 </div>
                 <div class="form-row">
@@ -910,7 +973,7 @@ $connection->close();
                     </div>
                     <div class="form-group" id="othergenderGroup" style="display: none;">
                         <label for="othergender" class="label required">Specify Gender</label>
-                        <input type="text" id="othergender" name="othergender" autocomplete="off">
+                        <input type="text" id="othergender" name="othergender" autocomplete="off" placeholder="Specify your gender">
                         <span class="error" id="othergender-error"><?php echo htmlspecialchars($errors['othergender'] ?? ''); ?></span>
                     </div>
                 </div>
@@ -922,13 +985,13 @@ $connection->close();
                     </div>
                     <div class="form-group">
                         <label for="age" class="label required">Age</label>
-                        <input type="number" id="age" name="age" required autocomplete="off" min="1" max="120" aria-required="true">
+                        <input type="number" id="age" name="age" required autocomplete="off" min="1" max="120" aria-required="true" placeholder="Auto-calculated">
                         <span class="error" id="age-error"><?php echo htmlspecialchars($errors['age'] ?? ''); ?></span>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="occupation" class="label required">Occupation</label>
-                    <input type="text" id="occupation" name="occupation" required autocomplete="off" aria-required="true">
+                    <input type="text" id="occupation" name="occupation" required autocomplete="off" aria-required="true" placeholder="Enter your occupation">
                     <span class="error" id="occupation-error"><?php echo htmlspecialchars($errors['occupation'] ?? ''); ?></span>
                 </div>
             </div>
@@ -938,25 +1001,25 @@ $connection->close();
                 <h2>Contact and Address</h2>
                 <div class="form-group">
                     <label for="address" class="label required">Complete Address</label>
-                    <input type="text" id="address" name="address" required autocomplete="off" aria-required="true">
+                    <input type="text" id="address" name="address" required autocomplete="off" aria-required="true" placeholder="Enter your full address">
                     <span class="error" id="address-error"><?php echo htmlspecialchars($errors['address'] ?? ''); ?></span>
                 </div>
                 <div class="form-group">
                     <label for="region" class="label required">Region</label>
-                    <input type="text" id="region" name="region" required autocomplete="off" aria-required="true">
+                    <input type="text" id="region" name="region" required autocomplete="off" aria-required="true" placeholder="Enter your region">
                     <span class="error" id="region-error"><?php echo htmlspecialchars($errors['region'] ?? ''); ?></span>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="email" class="label required">Email Address</label>
-                        <input type="email" id="email" name="email" required autocomplete="off" aria-required="true">
+                        <input type="email" id="email" name="email" required autocomplete="off" aria-required="true" placeholder="Enter your email">
                         <span class="error" id="email-error"><?php echo htmlspecialchars($errors['email'] ?? ''); ?></span>
                     </div>
                     <div class="form-group">
                         <label for="contact" class="label required">Contact Number</label>
                         <div class="contact-group">
                             <input type="text" value="+63" readonly aria-label="Country code">
-                            <input type="text" id="contact" name="contact" required autocomplete="off" pattern="[0-9]{10}" title="Please enter a valid 10-digit phone number" placeholder="Example: 9123456789" aria-required="true">
+                            <input type="text" id="contact" name="contact" required autocomplete="off" pattern="[0-9]{10}" title="Please enter a valid 10-digit phone number" placeholder="9123456789" aria-required="true">
                         </div>
                         <span class="error" id="contact-error"><?php echo htmlspecialchars($errors['contact'] ?? ''); ?></span>
                     </div>
@@ -982,7 +1045,7 @@ $connection->close();
                 </div>
                 <div class="form-group">
                     <label for="purpose" class="label required">Purpose of Appointment</label>
-                    <input type="text" id="purpose" name="purpose" required autocomplete="off" aria-required="true">
+                    <input type="text" id="purpose" name="purpose" required autocomplete="off" aria-required="true" placeholder="Enter the purpose of your appointment">
                     <span class="error" id="purpose-error"><?php echo htmlspecialchars($errors['purpose'] ?? ''); ?></span>
                 </div>
             </div>

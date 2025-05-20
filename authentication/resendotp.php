@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resendotp'])) {
                     };
 
                     $mail->send();
-                    $success_message = "A new OTP has been sent to your email!";
+                    $success_message = "A new OTP has been sent to your email.";
                 } catch (Exception $e) {
                     // Delete pending record on email failure
                     $delete_sql = "DELETE FROM data WHERE email = ? AND status_Account = 'pending'";
@@ -99,237 +99,139 @@ if ($rawOutput) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="./image/icons/logo1.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
     <title>Resend OTP</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
+            font-family: 'Inter', sans-serif;
         }
 
         body {
+            background: linear-gradient(180deg, #f4f7fa 0%, #e8ecef 100%);
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            background-image: url('image/bg.jpg');
-            background-size: cover;
-            background-position: center;
+            padding: 1rem;
         }
 
         .form-container {
-            width: 420px;
-            padding: 40px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            animation: fadeInContainer 0.5s ease-in-out;
+            animation: fadeIn 0.5s ease-in-out;
         }
 
-        @keyframes fadeInContainer {
-            0% { opacity: 0; transform: scale(0.95); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-
-        .form-container h5 {
-            font-size: 28px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin-bottom: 15px;
-        }
-
-        .form-container .subtitle {
-            font-size: 16px;
-            color: #666;
-            margin-bottom: 20px;
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
 
         .success-message,
         .notification-message {
-            font-size: 14px;
-            margin-bottom: 10px;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            animation: fadeIn 0.5s ease-in-out;
-            display: none;
+            animation: slideIn 0.3s ease-in-out;
         }
 
-        .success-message {
-            color: green;
-            background: rgba(0, 128, 0, 0.1);
-            border: 1px solid green;
+        @keyframes slideIn {
+            0% { opacity: 0; transform: translateY(-5px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
 
-        .notification-message {
-            color: #e63946;
-            background: rgba(230, 57, 70, 0.1);
-            border: 1px solid #e63946;
-        }
-
-        button {
-            width: 50%;
-            padding: 14px;
-            background: linear-gradient(135deg, #007bff, #0056b3);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.3s ease, transform 0.2s ease;
-            position: relative;
-        }
-
-        button:disabled {
-            background: #cccccc;
-            cursor: not-allowed;
-        }
-
-        button:hover:not(:disabled) {
-            background: linear-gradient(135deg, #0056b3, #003d80);
-            transform: translateY(-2px);
-        }
-
-        button:active:not(:disabled) {
-            transform: translateY(0);
-        }
-
-        button.loading .button-content {
-            visibility: hidden;
-        }
-
-        button.loading::after {
+        .loading::after {
             content: '';
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 20px;
-            height: 20px;
-            border: 3px solid #fff;
-            border-top: 3px solid transparent;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #fff;
+            border-top: 2px solid transparent;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            animation: spin 0.8s linear infinite;
         }
 
         @keyframes spin {
             0% { transform: translate(-50%, -50%) rotate(0deg); }
             100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
-
-        @keyframes fadeIn {
-            0% { opacity: 0; transform: translateY(-10px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-
-        .verify-link,
-        .register-link {
-            display: inline-block;
-            margin-top: 20px;
-            margin-left: 10px;
-            margin-right: 10px;
-            color: #007bff;
-            text-decoration: none;
-            font-size: 14px;
-        }
-
-        .verify-link:hover,
-        .register-link:hover {
-            text-decoration: underline;
-        }
-
-        @media (max-width: 480px) {
-            .form-container {
-                width: 90%;
-                padding: 20px;
-            }
-
-            .form-container h5 {
-                font-size: 24px;
-            }
-
-            .form-container .subtitle,
-            .success-message,
-            .notification-message {
-                font-size: 14px;
-            }
-
-            button {
-                padding: 12px;
-                font-size: 14px;
-            }
-
-            .verify-link,
-            .register-link {
-                font-size: 12px;
-            }
-        }
     </style>
 </head>
 <body>
-<div class="form-container">
-    <h5>Resend OTP</h5>
-    <div class="subtitle">Request a new OTP if you didn't receive it</div>
-    <?php if (!empty($success_message)): ?>
-        <div class="success-message" id="success-message" style="display: block;"><?php echo $success_message; ?></div>
-    <?php elseif (!empty($notification)): ?>
-        <div class="notification-message" id="notification-message" style="display: block;"><?php echo $notification; ?></div>
-    <?php endif; ?>
-    <form action="" method="POST" id="resendForm">
-        <input type="hidden" name="resendotp" value="1">
-        <button type="submit" id="resend-btn" <?php echo $cooldown_active ? 'disabled' : ''; ?>>
-            <span class="button-content">Resend OTP <i class='bx bx-refresh'></i></span>
-        </button>
-        <a href="verify.php" class="verify-link">Back to Verify OTP</a>
-        <a href="register.php" class="register-link">Back to Register</a>
-    </form>
-</div>
+    <div class="form-container max-w-md w-full bg-white rounded-lg shadow-md p-6 sm:p-8 md:p-10">
+        <h5 class="text-xl sm:text-2xl font-semibold text-gray-800 text-center mb-4">Resend OTP</h5>
+        <div class="subtitle text-sm sm:text-base text-gray-600 text-center mb-6">Request a new one-time password if you did not receive it</div>
+        
+        <?php if (!empty($success_message)): ?>
+            <div class="success-message bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-md mb-6 text-center text-sm sm:text-base" id="success-message" style="display: block;">
+                <?php echo $success_message; ?>
+            </div>
+        <?php elseif (!empty($notification)): ?>
+            <div class="notification-message bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-md mb-6 text-center text-sm sm:text-base" id="notification-message" style="display: block;">
+                <?php echo $notification; ?>
+            </div>
+        <?php endif; ?>
 
-<script>
-    // Declare variables once
-    const form = document.getElementById('resendForm');
-    const resendButton = document.getElementById('resend-btn');
-    const notificationMessage = document.getElementById('notification-message');
-    const successMessage = document.getElementById('success-message');
+        <form action="" method="POST" id="resendForm" class="space-y-6">
+            <input type="hidden" name="resendotp" value="1">
+            <button 
+                type="submit" 
+                id="resend-btn" 
+                class="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white font-medium rounded-md text-sm sm:text-base hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed <?php echo $cooldown_active ? 'disabled' : ''; ?>"
+            >
+                <span class="button-content flex items-center gap-2">
+                    Resend OTP <i class='bx bx-refresh'></i>
+                </span>
+            </button>
+            <div class="flex flex-col sm:flex-row sm:justify-between text-sm sm:text-base space-y-2 sm:space-y-0">
+                <a href="verify.php" class="verify-link text-blue-600 hover:underline transition-colors duration-200">Return to OTP Verification</a>
+                <a href="register.php" class="register-link text-blue-600 hover:underline transition-colors duration-200">Return to Registration</a>
+            </div>
+        </form>
+    </div>
 
-    // Handle countdown for cooldown
-    <?php if ($cooldown_active): ?>
-        const countdownElement = document.getElementById('countdown');
-        let timeLeft = parseInt(countdownElement.textContent);
+    <script>
+        // Initialize variables
+        const form = document.getElementById('resendForm');
+        const resendButton = document.getElementById('resend-btn');
+        const notificationMessage = document.getElementById('notification-message');
+        const successMessage = document.getElementById('success-message');
 
-        const countdown = setInterval(() => {
-            timeLeft--;
-            countdownElement.textContent = timeLeft;
+        // Handle countdown for cooldown
+        <?php if ($cooldown_active): ?>
+            const countdownElement = document.getElementById('countdown');
+            let timeLeft = parseInt(countdownElement.textContent);
 
-            if (timeLeft <= 0) {
-                clearInterval(countdown);
-                notificationMessage.style.display = 'none';
-                resendButton.disabled = false;
+            const countdown = setInterval(() => {
+                timeLeft--;
+                countdownElement.textContent = timeLeft;
+
+                if (timeLeft <= 0) {
+                    clearInterval(countdown);
+                    notificationMessage.style.display = 'none';
+                    resendButton.disabled = false;
+                    resendButton.classList.remove('disabled');
+                }
+            }, 1000);
+        <?php endif; ?>
+
+        // Handle success message and redirect
+        <?php if (!empty($success_message)): ?>
+            setTimeout(() => {
+                window.location.href = 'verify.php';
+            }, 2000);
+        <?php endif; ?>
+
+        // Form submission with loading state
+        form?.addEventListener('submit', (e) => {
+            if (!resendButton.disabled) {
+                resendButton.disabled = true;
+                resendButton.classList.add('loading');
+                resendButton.querySelector('.button-content').style.visibility = 'hidden';
             }
-        }, 1000);
-    <?php endif; ?>
-
-    // Handle success message and redirect
-    <?php if (!empty($success_message)): ?>
-        setTimeout(() => {
-            window.location.href = 'verify.php';
-        }, 2000);
-    <?php endif; ?>
-
-    // Form submission with loading state
-    form?.addEventListener('submit', (e) => {
-        if (!resendButton.disabled) {
-            resendButton.disabled = true;
-            resendButton.classList.add('loading');
-        }
-    });
-</script>
+        });
+    </script>
 </body>
 </html>
