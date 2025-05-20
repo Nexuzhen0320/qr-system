@@ -42,6 +42,10 @@ $errors = [];
 $success_message = '';
 $debug_log = [];
 
+function logError($message) {
+    file_put_contents('error_log.txt', date('Y-m-d H:i:s') . ": $message\n", FILE_APPEND);
+}
+
 // Directory paths
 define('PHYSICAL_UPLOAD_DIR', '../ProfileImage/image/IdPhoto/');
 define('RELATIVE_UPLOAD_DIR', '../ProfileImage/image/IdPhoto/');
@@ -54,12 +58,8 @@ function generateAppointmentId($connection) {
     $attempt = 0;
 
     while ($attempt < $maxRetries) {
-        // Generate a random number between 0 and 99999999
         $randomNumber = mt_rand(0, 99999999);
-        // Format as 8-digit zero-padded string (e.g., 00012345)
         $appointment_id = sprintf("%08d", $randomNumber);
-
-        // Check if ID already exists
         $stmt = $connection->prepare("SELECT COUNT(*) AS count FROM appointments WHERE appointment_id = ?");
         $stmt->bind_param("s", $appointment_id);
         $stmt->execute();
@@ -68,13 +68,12 @@ function generateAppointmentId($connection) {
         $stmt->close();
 
         if ($row['count'] == 0) {
-            return $appointment_id; // ID is unique
+            return $appointment_id;
         }
 
         $attempt++;
     }
 
-    // If no unique ID is found after retries, throw an exception
     throw new Exception("Unable to generate a unique appointment ID after $maxRetries attempts.");
 }
 
@@ -83,6 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['idPhoto']) && isset(
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
         $errors['general'] = 'Invalid CSRF token.';
         $debug_log[] = 'CSRF token validation failed.';
+        logError('CSRF token validation failed for ID photo upload.');
         if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'errors' => $errors, 'debug' => $debug_log]);
@@ -95,13 +95,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['idPhoto']) && isset(
     $file = $_FILES['idPhoto'];
     $validTypes = ['image/jpeg', 'image/jpg'];
 
-    // Generate filename
     $baseFileName = 'id_' . $user_id;
     $fileName = $baseFileName . '.jpg';
     $uploadPath = PHYSICAL_UPLOAD_DIR . $fileName;
     $relativePath = RELATIVE_UPLOAD_DIR . $fileName;
 
-    // Handle file conflicts
     $counter = 1;
     while (file_exists($uploadPath)) {
         $fileName = $baseFileName . '_' . $counter . '.jpg';
@@ -114,6 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['idPhoto']) && isset(
         if (!mkdir(PHYSICAL_UPLOAD_DIR, 0777, true)) {
             $errors['idPhoto'] = 'Failed to create upload directory.';
             $debug_log[] = "Failed to create directory: " . PHYSICAL_UPLOAD_DIR;
+            logError("Failed to create upload directory: " . PHYSICAL_UPLOAD_DIR);
         }
     }
 
@@ -162,7 +161,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['idPhoto']) && isset(
                     } else {
                         imagedestroy($image);
                         $errors['idPhoto'] = "Failed to save image to server.";
-                        $debug_log[] = "Failed to save image to: $updatePath";
+                        $debug_log[] = "Failed to save image to: $uploadPath";
+                        logError("Failed to save ID photo to: $uploadPath");
                     }
                 }
             } else {
@@ -186,6 +186,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['idPhoto']) && isset(
                     } else {
                         $errors['idPhoto'] = "Failed to save compressed image to server.";
                         $debug_log[] = "Failed to save compressed image to: $uploadPath";
+                        logError("Failed to save compressed ID photo to: $uploadPath");
                     }
                 } else {
                     $errors['idPhoto'] = "Server image processing unavailable.";
@@ -206,6 +207,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['removeIdPhoto'])) {
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
         $errors['general'] = 'Invalid CSRF token.';
         $debug_log[] = 'CSRF token validation failed for photo removal.';
+        logError('CSRF token validation failed for photo removal.');
         if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'errors' => $errors, 'debug' => $debug_log]);
@@ -237,6 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_appointment'])
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
         $errors['general'] = 'Invalid CSRF token.';
         $debug_log[] = 'CSRF token validation failed for form submission.';
+        logError('CSRF token validation failed for form submission.');
         if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'errors' => $errors, 'debug' => $debug_log]);
@@ -277,7 +280,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_appointment'])
     if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors['email'] = 'Valid email is required.';
     if (empty($contact) || !preg_match('/^[0-9]{10}$/', $contact)) $errors['contact'] = 'Valid 10-digit contact number is required.';
     if (empty($appointment_date)) $errors['appointmentDate'] = 'Appointment date is required.';
-    if (empty($appointment_time)) $errors['appointmentTime'] = 'Appointment time is required.';
+    if (empty($appointment_time)) {
+        $errors['appointmentTime'] = 'Appointment time is required.';
+    } elseif (!preg_match('/^([0-1][0-9]|2[0-2]):[0-5][0-9]$/', $appointment_time) || $appointment_time < '05:00' || $appointment_time > '22:00') {
+        $errors['appointmentTime'] = 'Appointment time must be between 5:00 AM and 10:00 PM.';
+        $debug_log[] = "Invalid appointment time: $appointment_time";
+        logError("Invalid appointment time: $appointment_time");
+    }
     if (empty($purpose)) $errors['purpose'] = 'Purpose is required.';
     if (empty($profile_photo)) {
         $errors['myFile'] = 'Profile photo is required.';
@@ -285,6 +294,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_appointment'])
     } elseif (!file_exists(str_replace(PROFILE_RELATIVE_UPLOAD_DIR, PROFILE_PHYSICAL_UPLOAD_DIR, $profile_photo))) {
         $errors['myFile'] = 'Profile photo file not found.';
         $debug_log[] = "Profile photo not found: " . str_replace(PROFILE_RELATIVE_UPLOAD_DIR, PROFILE_PHYSICAL_UPLOAD_DIR, $profile_photo);
+        logError("Profile photo not found: " . str_replace(PROFILE_RELATIVE_UPLOAD_DIR, PROFILE_PHYSICAL_UPLOAD_DIR, $profile_photo));
     }
     if (empty($id_type)) $errors['idType'] = 'ID type is required.';
     if (empty($id_number)) $errors['idNumber'] = 'ID number is required.';
@@ -294,6 +304,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_appointment'])
     } elseif (!file_exists(str_replace(RELATIVE_UPLOAD_DIR, PHYSICAL_UPLOAD_DIR, $id_photo))) {
         $errors['idPhoto'] = 'ID photo file not found.';
         $debug_log[] = "ID photo not found: " . str_replace(RELATIVE_UPLOAD_DIR, PHYSICAL_UPLOAD_DIR, $id_photo);
+        logError("ID photo not found: " . str_replace(RELATIVE_UPLOAD_DIR, PHYSICAL_UPLOAD_DIR, $id_photo));
     }
 
     if (!empty($appointment_date)) {
@@ -306,7 +317,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_appointment'])
     if (empty($errors)) {
         $connection->begin_transaction();
         try {
-            // Generate unique appointment ID
             $appointment_id = generateAppointmentId($connection);
 
             $userStmt = $connection->prepare("
@@ -373,6 +383,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_appointment'])
             $connection->rollback();
             $errors['general'] = 'Failed to submit appointment: ' . $e->getMessage();
             $debug_log[] = "Database error: " . $e->getMessage();
+            logError("Failed to submit appointment: " . $e->getMessage());
             if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
                 header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'error' => $errors['general'], 'debug' => $debug_log]);
@@ -790,7 +801,7 @@ $connection->close();
         </div>
         <nav class="navbar" aria-label="Navigation">
             <a href="fillupform.php" class="active" aria-current="page">Registration Form</a>
-            <a href="../logout/logout.php">Logout</a>
+            <a href="../logout.php">Logout</a>
         </nav>
 
         <form id="registrationForm" action="" method="POST" enctype="multipart/form-data" aria-label="Registration Form">
@@ -820,9 +831,9 @@ $connection->close();
                             <option value="" <?php echo empty($_SESSION['idType']) ? 'selected' : ''; ?>>Select ID Type</option>
                             <?php
                             $idTypes = [
-                                "Professional Regulation Commission", "Government Service Insurance System", "Passport", "SSS ID", "Driver's License",
+                                "Professional Regulation Commission", "Government Service Insurance System", "Passport", "SSS ID", "Drivers License",
                                 "Overseas Workers Welfare Administration", "Senior Citizen ID", "NBI Clearance", "Unified Multi-purpose Identification (UMID) Card",
-                                "Voters ID", "TIN ID", "PhilHealth ID", "Postal ID", "Seaman's Book", "Philippine Identification Card",
+                                "Voters ID", "TIN ID", "PhilHealth ID", "Postal ID", "Seamans Book", "Philippine Identification Card",
                                 "Philippine Passport", "Philippine Postal ID", "Police Clearance", "Barangay Clearance", "Integrated Bar of the Philippines",
                                 "National ID", "Philippine Identification (PhilID)/ePhilID", "School ID", "Alien Certification"
                             ];
@@ -835,7 +846,7 @@ $connection->close();
                         <span class="error" id="idType-error"><?php echo htmlspecialchars($errors['idType'] ?? ''); ?></span>
                     </div>
                     <div class="form-group">
-                        <label for="idNumber" class="label required">ID Number</label>
+                        <label \n                        <label for="idNumber" class="label required">ID Number</label>
                         <input type="text" id="idNumber" name="idNumber" required autocomplete="off" aria-required="true" value="<?php echo htmlspecialchars($_SESSION['idNumber'] ?? ''); ?>" placeholder="Example: xxxx-xxxx-xxxx-xxxx" maxlength="50">
                         <span class="error" id="idNumber-error"><?php echo htmlspecialchars($errors['idNumber'] ?? ''); ?></span>
                     </div>
@@ -918,7 +929,7 @@ $connection->close();
                 <div class="form-group">
                     <label for="occupation" class="label required">Occupation</label>
                     <input type="text" id="occupation" name="occupation" required autocomplete="off" aria-required="true">
-                        <span class="error" id="occupation-error"><?php echo htmlspecialchars($errors['occupation'] ?? ''); ?></span>
+                    <span class="error" id="occupation-error"><?php echo htmlspecialchars($errors['occupation'] ?? ''); ?></span>
                 </div>
             </div>
 
@@ -963,8 +974,9 @@ $connection->close();
                         <span class="error" id="appointmentDate-error"><?php echo htmlspecialchars($errors['appointmentDate'] ?? ''); ?></span>
                     </div>
                     <div class="form-group">
-                        <label for="appointmentTime" class="label required">Appointment Time</label>
-                        <input type="time" id="appointmentTime" name="appointmentTime" required autocomplete="off" aria-required="true">
+                        <label for="appointmentTime" class="label required">Appointment Time (5:00 AM - 10:00 PM)</label>
+                        <input type="time" id="appointmentTime" name="appointmentTime" required autocomplete="off" min="05:00" max="22:00" aria-required="true">
+                        <div class="photo-upload-note">Available from 5:00 AM to 10:00 PM</div>
                         <span class="error" id="appointmentTime-error"><?php echo htmlspecialchars($errors['appointmentTime'] ?? ''); ?></span>
                     </div>
                 </div>
@@ -1034,6 +1046,7 @@ $connection->close();
                 age: document.getElementById('age'),
                 contact: document.getElementById('contact'),
                 appointmentDate: document.getElementById('appointmentDate'),
+                appointmentTime: document.getElementById('appointmentTime'),
                 successMessage: document.getElementById('successMessage'),
                 errorMessage: document.getElementById('errorMessage'),
                 loadingSpinner: document.getElementById('loadingSpinner'),
@@ -1092,6 +1105,11 @@ $connection->close();
             elements.contact.addEventListener('input', e => {
                 e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
                 validateField('contact', e.target.value);
+            });
+
+            // Restrict Appointment Time
+            elements.appointmentTime.addEventListener('input', () => {
+                validateField('appointmentTime', elements.appointmentTime.value);
             });
 
             // Image Compression
@@ -1328,10 +1346,13 @@ $connection->close();
                     case 'idType':
                         showError(id, value ? '' : 'Please select a valid ID type.');
                         break;
+                    case 'appointmentTime':
+                        showError(id, value && value >= '05:00' && value <= '22:00' ? '' : 'Time must be between 5:00 AM and 10:00 PM.');
+                        break;
                 }
             };
 
-            ['lastName', 'firstName', 'occupation', 'address', 'region', 'purpose', 'email', 'contact', 'age', 'idNumber', 'gender', 'idType'].forEach(id => {
+            ['lastName', 'firstName', 'occupation', 'address', 'region', 'purpose', 'email', 'contact', 'age', 'idNumber', 'gender', 'idType', 'appointmentTime'].forEach(id => {
                 const input = document.getElementById(id);
                 if (input) {
                     input.addEventListener('input', debounce(e => validateField(id, e.target.value), 300));

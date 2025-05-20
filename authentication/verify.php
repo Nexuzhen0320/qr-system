@@ -1,13 +1,16 @@
 <?php
 session_start();
 
-// Initialize messages
+function logError($message) {
+    file_put_contents('error_log.txt', date('Y-m-d H:i:s') . ": $message\n", FILE_APPEND);
+}
+
 $success_message = '';
 $otp_expired_message = '';
 $session_expired = false;
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $user_otp = $_POST['otp'];
+    $user_otp = $_POST['otp'] ?? '';
     $email = $_SESSION['email'] ?? '';
 
     if (empty($email) || empty($_SESSION['otp'])) {
@@ -15,29 +18,38 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         include "../database/db.php";
         $delete_sql = "DELETE FROM data WHERE email = ? AND status_Account = 'pending'";
         $delete_stmt = $connection->prepare($delete_sql);
-        $delete_stmt->bind_param("s", $email);
-        $delete_stmt->execute();
-        $delete_stmt->close();
+        if (!$delete_stmt) {
+            logError("Delete prepare error: " . $connection->error);
+        } else {
+            $delete_stmt->bind_param("s", $email);
+            $delete_stmt->execute();
+            $delete_stmt->close();
+        }
     } else {
-        // Check OTP expiration (2 minutes = 120 seconds)
         $otp_time = $_SESSION['otp_time'] ?? 0;
-        if ((time() - $otp_time) > 120) {
+        if ((time() - $otp_time) > 180) { // Updated to 3 minutes
             $otp_expired_message = 'OTP has expired. Please click "Resend OTP" to receive a new code.';
         } elseif ($user_otp == $_SESSION['otp']) {
             include "../database/db.php";
             $sql = "UPDATE data SET status_Account = 'verified', otp = NULL, verify_otp = ? WHERE email = ?";
             $stmt = $connection->prepare($sql);
-            $stmt->bind_param("ss", $user_otp, $email);
-            
-            if ($stmt->execute()) {
-                $success_message = 'Registration successful!';
-                session_destroy();
+            if (!$stmt) {
+                $error_message = 'Database prepare error: ' . $connection->error;
+                logError($error_message);
             } else {
-                $error_message = 'Database error: ' . $stmt->error;
+                $stmt->bind_param("ss", $user_otp, $email);
+                if ($stmt->execute()) {
+                    $success_message = 'Registration successful!';
+                    session_destroy();
+                } else {
+                    $error_message = 'Database execution error: ' . $stmt->error;
+                    logError($error_message);
+                }
+                $stmt->close();
             }
-            $stmt->close();
         } else {
             $error_message = 'Invalid OTP. Please try again.';
+            logError($error_message);
         }
     }
 }
@@ -201,7 +213,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             width: 90%;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
             animation: popIn 0.4s ease-in-out;
-            background: rgba(255, 255, 2255, 0.9);
+            background: rgba(255, 255, 255, 0.9);
             border: 1px solid rgba(230, 57, 70, 0.2);
         }
 
@@ -402,7 +414,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <form action="" method="POST" id="verifyForm" <?php echo (!empty($success_message)) ? 'style="display: none;"' : ''; ?>>
             <div class="input-group">
                 <i class='bx bxs-key icon-left'></i>
-                <input type="text" name="otp" id="otp" placeholder="Enter 6-digit OTP" autocomplete="off" required>
+                <input type="text" name="otp" id="otp" placeholder="Enter 6-digit OTP" pattern="\d{6}" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6)" autocomplete="off" required>
             </div>
             <div class="error-message-otp" id="otp-error"><?php echo isset($_POST['otp']) && $_POST['otp'] != $_SESSION['otp'] ? 'Invalid OTP. Please try again.' : ''; ?></div>
             <button type="submit" id="submit-btn"><span class="button-content">Verify <i class='bx bx-right-arrow-alt'></i></span></button>
@@ -433,7 +445,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // OTP expiration timer
         <?php if (!empty($_SESSION['otp_time']) && empty($success_message) && empty($otp_expired_message)): ?>
-            let timeLeft = 120 - (Math.floor(Date.now() / 1000) - <?php echo $_SESSION['otp_time']; ?>);
+            let timeLeft = 180 - (Math.floor(Date.now() / 1000) - <?php echo $_SESSION['otp_time']; ?>);
             if (timeLeft > 0) {
                 const timerInterval = setInterval(() => {
                     if (timeLeft <= 0) {

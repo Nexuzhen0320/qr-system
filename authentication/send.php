@@ -105,7 +105,7 @@ try {
 
     $mail->SMTPDebug = 0;
     $mail->Debugoutput = function($str, $level) {
-        file_put_contents('../debug_&_error_log/phpmailer_debug.log', "PHPMailer[$level]: $str\n", FILE_APPEND);
+        file_put_contents('phpmailer_debug.log', "PHPMailer[$level]: $str\n", FILE_APPEND);
     };
 
     $mail->send();
@@ -125,7 +125,7 @@ try {
 // === Debug Output ===
 $rawOutput = ob_get_clean();
 if ($rawOutput) {
-    file_put_contents('../debug_&_error_log/debug_output.log', $rawOutput);
+    file_put_contents('debug_output.log', $rawOutput);
 }
 
 echo json_encode($response);

@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-// Prevent caching
+// Prevent caching to ensure fresh content
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 header("Expires: 0");
@@ -30,8 +30,14 @@ try {
         exit();
     }
 
-    // Check appointment
-    $stmt = $connection->prepare("SELECT * FROM appointments WHERE user_id = ?");
+    // Fetch appointment details, including id_type
+    $stmt = $connection->prepare("
+        SELECT appointment_id, first_name, middle_name, last_name, gender, other_gender, birthdate, age, 
+               occupation, address, region, email, contact, appointment_date, appointment_time, purpose, 
+               profile_photo, id_type, id_number, id_photo, status, created_at 
+        FROM appointments 
+        WHERE user_id = ?
+    ");
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -48,19 +54,18 @@ try {
     $profile_photo = $appointment['profile_photo'] ?? $_SESSION['profilePhoto'] ?? '';
     $debug_log = [];
 
-    // Define base paths
+    // Define base paths for photo handling
     $base_server_path = '../ProfileImage/image/';
     $base_relative_url = './image/';
 
     if ($profile_photo) {
-        // Normalize the stored path
+        // Normalize stored path
         $profile_photo = ltrim($profile_photo, '/\\');
-        // Convert relative path (e.g., ./image/Profile_Photo/abc123.jpg) to absolute server path
+        // Convert relative path to absolute server path
         $full_photo_path = str_replace('./image/', $base_server_path, $profile_photo);
         $debug_log[] = "Profile photo stored path: '$profile_photo', computed server path: '$full_photo_path'";
         if (file_exists($full_photo_path) && is_file($full_photo_path)) {
             $is_valid_photo = true;
-            // Use the stored relative path for display, adjusting for browser resolution
             $profile_photo_url = str_replace('./image/', $base_relative_url, $profile_photo);
         } else {
             $debug_log[] = "Profile photo file not found or invalid: '$full_photo_path'";
@@ -72,19 +77,18 @@ try {
     // Validate ID photo
     $is_valid_id_photo = false;
     $id_photo = $appointment['id_photo'] ?? '';
+    $id_type = $appointment['id_type'] ?? '';
     $id_number = $appointment['id_number'] ?? '';
 
     if ($id_photo) {
-        // Normalize the stored path
+        // Normalize stored path
         $id_photo = ltrim($id_photo, '/\\');
-        // Convert relative path (e.g., ./image/IdPhoto/id_123.jpg) to absolute server path
+        // Convert relative path to absolute server path
         $full_id_photo_path = str_replace('../image/', $base_server_path, $id_photo);
         $debug_log[] = "ID photo stored path: '$id_photo', computed server path: '$full_id_photo_path'";
         if (file_exists($full_id_photo_path) && is_file($full_id_photo_path)) {
             $is_valid_id_photo = true;
-            // Use the stored relative path for display, adjusting for browser resolution
-            $id_photo_url = str_replace('../image/', $base_relative_url, $id_photo);
-            $id_photo_url = str_replace('./image/', $base_relative_url, $id_photo);
+            $id_photo_url = str_replace(['../image/', './image/'], $base_relative_url, $id_photo);
         } else {
             $debug_log[] = "ID photo file not found or invalid: '$full_id_photo_path'";
         }
@@ -451,7 +455,8 @@ try {
             margin: 10px auto;
         }
 
-        .id-number {
+        .id-number,
+        .id-type {
             font-size: 16px;
             color: var(--text-color);
             margin: 10px 0;
@@ -610,6 +615,14 @@ try {
                 ?>
             </div>
         </div>
+        <?php if (!empty($debug_log)): ?>
+            <div class="debug-log">
+                <h3>Debug Log:</h3>
+                <?php foreach ($debug_log as $log): ?>
+                    <p><?php echo htmlspecialchars($log); ?></p>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
     </div>
 
     <!-- Modal for ID Details -->
@@ -625,6 +638,7 @@ try {
                 <?php else: ?>
                     <div class="id-placeholder">No ID Photo Available</div>
                 <?php endif; ?>
+                <p class="id-type"><strong>ID Type:</strong> <?php echo htmlspecialchars($id_type ?: 'Not Provided'); ?></p>
                 <p class="id-number"><strong>ID Number:</strong> <?php echo htmlspecialchars($id_number ?: 'Not Provided'); ?></p>
             </div>
         </div>
@@ -632,6 +646,7 @@ try {
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize debug log visibility
             const debugLog = document.querySelector('.debug-log');
             if (debugLog?.textContent.trim()) {
                 debugLog.style.display = 'block';

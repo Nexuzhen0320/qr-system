@@ -76,8 +76,9 @@ session_start();
             background: rgba(255, 255, 255, 0.5);
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
+
         #password, #cpassword {
-            padding-right: 60px; /* Adjust padding to accommodate icon */
+            padding-right: 60px;
         }
 
         .input-group input:focus {
@@ -114,7 +115,8 @@ session_start();
             color: #007bff;
         }
 
-        .input-group .valid-icon-email {
+        .input-group .valid-icon-email,
+        .input-group .valid-icon-password {
             position: absolute;
             top: 50%;
             right: 25px;
@@ -123,18 +125,7 @@ session_start();
             font-size: 20px;
         }
 
-        .input-group .valid-icon-password {
-            position: absolute;
-            top: 50%;
-            right: 38px;
-            transform: translateY(-50%);
-            color: green;
-            font-size: 20px;
-        }
-
-        .error-message-email,
-        .error-message-password,
-        .error-message-cpassword {
+        .error-message {
             color: #e63946;
             font-size: 14px;
             margin-top: -10px;
@@ -280,9 +271,7 @@ session_start();
                 font-size: 14px;
             }
 
-            .error-message-email,
-            .error-message-password,
-            .error-message-cpassword,
+            .error-message,
             .password-strength {
                 font-size: 12px;
             }
@@ -305,7 +294,7 @@ session_start();
             <input type="email" name="email" id="email" placeholder="Enter your email" autocomplete="off" required>
             <i class='bx bxs-check-circle valid-icon-email' id="email-valid" style="display: none;"></i>
         </div>
-        <div class="error-message-email" id="email-error"></div>
+        <div class="error-message" id="email-error"></div>
 
         <div class="input-group">
             <i class='bx bxs-lock-alt icon-left'></i>
@@ -313,7 +302,7 @@ session_start();
             <input type="password" name="password" id="password" placeholder="Create a password" autocomplete="off" required>
             <i class='bx bxs-check-circle valid-icon-password' id="password-valid" style="display: none;"></i>
         </div>
-        <div class="error-message-password" id="password-error"></div>
+        <div class="error-message" id="password-error"></div>
         <div class="password-strength" id="password-strength"></div>
 
         <div class="input-group">
@@ -322,19 +311,18 @@ session_start();
             <input type="password" name="cpassword" id="cpassword" placeholder="Confirm your password" autocomplete="off" required>
             <i class='bx bxs-check-circle valid-icon-password' id="cpassword-valid" style="display: none;"></i>
         </div>
-        <div class="error-message-cpassword" id="cpassword-error"></div>
+        <div class="error-message" id="cpassword-error"></div>
 
         <input type="hidden" name="otp" id="otp">
         <input type="hidden" name="subject" value="OTP Verification Code">
         <button type="submit" id="submit-btn" disabled><span class="button-content">Register <i class='bx bx-right-arrow-alt'></i></span></button>
-
         <a href="../index.php" class="login-link">Already have an account? Login</a>
     </form>
 </div>
 
 <script>
     function generateOTP() {
-        return Math.floor(100000 + Math.random() * 900000);
+        return Math.floor(Math.random() * 900000) + 100000; // Temporary client-side OTP; server will override
     }
 
     document.getElementById("otp").value = generateOTP();
@@ -393,7 +381,6 @@ session_start();
         passwordValid.style.display = 'none';
         cpasswordValid.style.display = 'none';
 
-        // Email validation
         if (!validateEmail(emailInput.value)) {
             emailError.textContent = 'Please enter a valid email address.';
             valid = false;
@@ -402,7 +389,6 @@ session_start();
             emailInput.classList.add('valid');
         }
 
-        // Password validation
         const passwordCheck = validatePassword(passwordInput.value);
         if (!passwordCheck.isValid) {
             passwordError.textContent = 'Password must be at least 8 characters with uppercase, lowercase, number, and special character.';
@@ -414,7 +400,6 @@ session_start();
         passwordStrength.textContent = passwordCheck.message;
         passwordStrength.className = `password-strength ${passwordCheck.class}`;
 
-        // Confirm password validation
         if (passwordInput.value !== confirmPasswordInput.value) {
             cpasswordError.textContent = 'Passwords do not match.';
             valid = false;
@@ -456,6 +441,11 @@ session_start();
                     method: "POST",
                     body: formData,
                 });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error: ${response.status} ${response.statusText}`);
+                }
+
                 const data = await response.json();
 
                 if (data.success) {
@@ -471,9 +461,12 @@ session_start();
                     submitButton.classList.remove('loading');
                 }
             } catch (error) {
-                console.error('Fetch error:', error);
+                console.error('Fetch error:', {
+                    message: error.message,
+                    stack: error.stack
+                });
                 formMessage.className = 'form-message error';
-                formMessage.textContent = 'An error occurred. Please try again.';
+                formMessage.textContent = `Registration error: ${error.message.includes('HTTP error') ? 'Server error. Please try again later.' : 'Network error. Please check your connection.'}`;
                 submitButton.disabled = false;
                 submitButton.classList.remove('loading');
             }

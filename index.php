@@ -119,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login']) && !$is_cool
                     $_SESSION['show_forgot_password'] = true;
                     $errors['password'] = 'Invalid Email or Password. Please try again.';
                     if ($_SESSION['show_forgot_password']) {
-                        $errors['password'] .= ' <a href="./forgot_password/forgotpas.php">Forgot Password?</a>';
+                        $errors['password'] .= ' <a href="./forgot_password/forgotpas.php">Register Here</a>';
                     }
                     if ($_SESSION['login_attempts'] >= 5) {
                         $_SESSION['cooldown_start'] = time();
@@ -135,13 +135,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login']) && !$is_cool
                 $_SESSION['show_forgot_password'] = true;
                 $errors['email'] = 'No account found with that email.';
                 if ($_SESSION['show_forgot_password']) {
-                    $errors['email'] .= ' <a href="./forgot_password/forgotpas.php">Forgot Password?</a>';
+                    $errors['email'] .= ' <a href="./registration/register.php">Register Here</a>';
                 }
                 if ($_SESSION['login_attempts'] >= 5) {
                     $_SESSION['cooldown_start'] = time();
                     $errors['password'] = 'Too many login attempts. Please wait ' . $cooldown_duration . ' seconds.';
                     if ($_SESSION['show_forgot_password']) {
-                        $errors['password'] .= ' <a href="./forgot_password/forgotpas.php">Forgot Password?</a>';
+                        $errors['password'] .= '<a href="./registration/register.php">Register Here</a>';
                     }
                 }
             }
