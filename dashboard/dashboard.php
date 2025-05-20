@@ -615,14 +615,6 @@ try {
                 ?>
             </div>
         </div>
-        <?php if (!empty($debug_log)): ?>
-            <div class="debug-log">
-                <h3>Debug Log:</h3>
-                <?php foreach ($debug_log as $log): ?>
-                    <p><?php echo htmlspecialchars($log); ?></p>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
     </div>
 
     <!-- Modal for ID Details -->
