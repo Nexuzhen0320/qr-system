@@ -26,9 +26,9 @@ if (ini_get("session.use_cookies")) {
 }
 
 // Log redirect attempt
-error_log("Redirecting to http://localhost/system-new/index.php");
+error_log("Redirecting to http://localhost/qr-system/index.php");
 
 // Redirect to login page with absolute URL
-header("Location: http://localhost/system-new/index.php", true, 302);
+header("Location: http://localhost/qr-system/index.php", true, 302);
 exit();
 ?>

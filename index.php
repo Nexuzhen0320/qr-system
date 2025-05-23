@@ -11,14 +11,18 @@ header("Expires: 0");
 if (isset($_SESSION['status_Account']) && $_SESSION['status_Account'] === 'logged_in' && isset($_SESSION['email'])) {
     try {
         $email = $_SESSION['email'];
-        $stmt = $connection->prepare("SELECT status_Account FROM data WHERE email = ?");
+        $stmt = $connection->prepare("SELECT status_Account, user_status FROM data WHERE email = ?");
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $result = $stmt->get_result();
         if ($result->num_rows > 0) {
             $row = $result->fetch_assoc();
             if ($row['status_Account'] === 'verified') {
-                header("Location: ./dashboard/dashboard.php");
+                if ($row['user_status'] == 1) {
+                    header("Location: ./admin/admin_dashboard.php");
+                } else {
+                    header("Location: ./dashboard/dashboard.php");
+                }
                 exit;
             } else {
                 header("Location: ./authentication/verify.php");
@@ -77,16 +81,12 @@ if ($_SESSION['login_attempts'] >= 5 && $_SESSION['cooldown_start'] > 0) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login']) && !$is_cooldown) {
     $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
-    $_SESSION['last_login_email'] = $email; // Store email for forgot password validation
+    $_SESSION['last_login_email'] = $email;
     $password = $_POST['password'];
 
-    if (empty($email)) {
-        $errors['email'] = 'Email is required.';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errors['email'] = 'Please enter a valid email address.';
-    }
-    if (empty($password)) {
-        $errors['password'] = 'Password is required.';
+    if (empty($email) || empty($password)) {
+        $errors['email'] = empty($email) ? 'Email is required.' : '';
+        $errors['password'] = empty($password) ? 'Password is required.' : '';
     } else {
         try {
             $stmt = $connection->prepare("SELECT * FROM data WHERE email = ?");
@@ -101,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login']) && !$is_cool
                 $row = $result->fetch_assoc();
                 if (password_verify($password, $row['password'])) {
                     // Successful login
-                    session_regenerate_id(true); // Regenerate session ID for security
+                    session_regenerate_id(true);
                     $_SESSION['login_attempts'] = 0;
                     $_SESSION['cooldown_start'] = 0;
                     $_SESSION['show_forgot_password'] = false;
@@ -111,42 +111,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login']) && !$is_cool
                     $_SESSION['verify_otp'] = $row['verify_otp'];
 
                     if ($row['status_Account'] === 'verified') {
-                        header("Location: ./dashboard/dashboard.php");
+                        if ($row['user_status'] == 1) {
+                            header("Location: ./admin/admin_dashboard.php");
+                        } else {
+                            header("Location: ./dashboard/dashboard.php");
+                        }
                         exit;
                     } else {
                         header("Location: ./authentication/verify.php");
                         exit;
                     }
                 } else {
-                    // Failed attempt
+                    // Failed password
                     $_SESSION['login_attempts']++;
                     $_SESSION['show_forgot_password'] = true;
                     $errors['password'] = 'Invalid Email or Password. Please try again.';
-                    if ($_SESSION['show_forgot_password']) {
-                        $errors['password'] .= ' <a href="./forgot_password/forgotpas.php" class="text-blue-600 hover:underline">Forgot Password?</a>';
-                    }
                     if ($_SESSION['login_attempts'] >= 5) {
                         $_SESSION['cooldown_start'] = time();
                         $errors['password'] = 'Too many login attempts. Please wait ' . $cooldown_duration . ' seconds.';
-                        if ($_SESSION['show_forgot_password']) {
-                            $errors['password'] .= ' <a href="./forgot_password/forgotpas.php" class="text-blue-600 hover:underline">Forgot Password?</a>';
-                        }
+                    }
+                    if ($_SESSION['show_forgot_password']) {
+                        $errors['password'] .= ' <a href="./forgot_password/forgotpas.php">Forgot Password?</a>';
                     }
                 }
             } else {
-                // Failed attempt
+                // Email not found
                 $_SESSION['login_attempts']++;
                 $_SESSION['show_forgot_password'] = true;
                 $errors['email'] = 'No account found with that email.';
-                if ($_SESSION['show_forgot_password']) {
-                    $errors['email'] .= ' <a href="./registration/register.php" class="text-blue-600 hover:underline">Register Here</a>';
-                }
                 if ($_SESSION['login_attempts'] >= 5) {
                     $_SESSION['cooldown_start'] = time();
                     $errors['password'] = 'Too many login attempts. Please wait ' . $cooldown_duration . ' seconds.';
-                    if ($_SESSION['show_forgot_password']) {
-                        $errors['password'] .= '<a href="./forgot_password/forgotpas.php" class="text-blue-600 hover:underline">Forgot Password?</a>';
-                    }
+                }
+                if ($_SESSION['show_forgot_password']) {
+                    $errors['email'] .= ' <a href="./registration/register.php">Register Here</a>';
                 }
             }
             $stmt->close();
@@ -159,6 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login']) && !$is_cool
 $connection->close();
 ?>
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -169,129 +168,194 @@ $connection->close();
     <meta http-equiv="Expires" content="0">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="./image/icons/logo1.ico">
-    <script src="https://cdn.tailwindcss.com"></script>
     <title>Login</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Poppins', sans-serif;
         }
 
         body {
-            background-image: url('./image/bg.jpg');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 1rem;
+            min-height: 100vh;
+            background-image: url('image/bg.jpg');
+            background-size: cover;
+            background-position: center;
         }
 
         .form-container {
-            animation: fadeIn 0.5s ease-in-out;
+            width: 420px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        @keyframes fadeIn {
-            0% { opacity: 0; transform: translateY(20px); }
-            100% { opacity: 1; transform: translateY(0); }
+        .form-container h5 {
+            font-size: 28px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 30px;
         }
 
-        .error-message {
-            animation: slideIn 0.5s ease-in-out;
+        .input-group {
+            position: relative;
+            margin-bottom: 10px;
+            text-align: left;
         }
 
-        @keyframes slideIn {
-            0% { opacity: 0; transform: translateY(-10px); }
-            100% { opacity: 1; transform: translateY(0); }
+        .input-group input {
+            width: 100%;
+            padding: 12px 40px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            color: #333;
+            background: rgba(255, 255, 255, 0.5);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
 
-        .loading::after {
-            content: '';
+        .input-group input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.2);
+        }
+
+        .input-group .icon-left {
             position: absolute;
             top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 1.5rem;
-            height: 1.5rem;
-            border: 3px solid #fff;
-            border-top: 3px solid transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+            left: 12px;
+            transform: translateY(-50%);
+            color: #666;
+            font-size: 20px;
         }
 
-        @keyframes spin {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        .input-group .icon-right {
+            position: absolute;
+            top: 50%;
+            right: 12px;
+            transform: translateY(-50%);
+            color: #666;
+            font-size: 20px;
+            cursor: pointer;
+            transition: color 0.3s ease;
         }
 
-        /* Ensure all links within the form-container are blue */
-        .form-container a {
-            color: #2563eb !important; /* Tailwind's text-blue-600 equivalent */
+        .input-group .icon-right:hover {
+            color: #007bff;
+        }
+
+        .error-message-email {
+            color: #e63946;
+            font-size: 14px;
+            margin-top: -10px;
+            margin-bottom: 10px;
+            margin-left: 10px;
+            text-align: left;
+            min-height: 20px;
+        }
+        .error-message-password {
+            color: #e63946;
+            font-size: 14px;
+            margin-top: -10px;
+            margin-bottom: 10px;
+            margin-left: 10px;
+            text-align: left;
+            min-height: 20px;
+        }
+
+        button {
+            width: 50%;
+            padding: 14px;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+
+        button:hover:not(:disabled) {
+            background: linear-gradient(135deg, #0056b3, #003d80);
+            transform: translateY(-2px);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .register-link {
+            display: block;
+            margin-top: 20px;
+            color: #007bff;
             text-decoration: none;
+            font-size: 14px;
         }
 
-        .form-container a:hover {
+        .register-link:hover {
             text-decoration: underline;
+        }
+
+        @media (max-width: 480px) {
+            .form-container {
+                width: 90%;
+                padding: 20px;
+            }
+
+            .form-container h5 {
+                font-size: 24px;
+            }
+
+            .input-group input {
+                padding: 10px 35px;
+                font-size: 14px;
+            }
+
+            .input-group .icon-left,
+            .input-group .icon-right {
+                font-size: 18px;
+            }
+
+            button {
+                padding: 12px;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="form-container max-w-md w-full bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl p-8 sm:p-10 transition-all duration-300">
-        <h5 class="text-2xl sm:text-3xl font-bold text-gray-900 text-center mb-4">Login</h5>
-        <div class="subtitle text-sm sm:text-base text-gray-600 text-center mb-6">Sign in to your account</div>
-        <form method="POST" action="" id="login-form" class="space-y-4">
-            <div class="input-group relative">
-                <i class='bx bxs-user absolute top-1/2 left-3 transform -translate-y-1/2 text-gray-500 text-lg sm:text-xl'></i>
-                <input 
-                    type="email" 
-                    name="email" 
-                    id="email" 
-                    placeholder="Enter your email" 
-                    autocomplete="off" 
-                    required 
-                    value="<?= htmlspecialchars($email ?? '') ?>"
-                    class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg bg-white/50 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 <?= $errors['email'] ? 'border-red-500' : '' ?>"
-                    aria-label="Email address"
-                >
-                <i class='bx bxs-check-circle absolute top-1/2 right-3 transform -translate-y-1/2 text-green-500 text-lg sm:text-xl hidden' id="email-valid"></i>
+    <div class="form-container">
+        <h5>Login</h5>
+        <form method="POST" action="" id="login-form">
+            <div class="input-group">
+                <i class='bx bxs-user icon-left'></i>
+                <input type="email" name="email" id="email" placeholder="Email" value="<?= htmlspecialchars($email ?? '') ?>" required>
             </div>
-            <div class="error-message text-red-600 text-xs sm:text-sm ml-2" id="email-error"><?= $errors['email'] ?></div>
-
-            <div class="input-group relative">
-                <i class='bx bxs-lock-alt absolute top-1/2 left-3 transform -translate-y-1/2 text-gray-500 text-lg sm:text-xl'></i>
-                <i class='bx bx-show absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-500 text-lg sm:text-xl cursor-pointer toggle-password'></i>
-                <input 
-                    type="password" 
-                    name="password" 
-                    id="password" 
-                    placeholder="Enter your password" 
-                    autocomplete="off" 
-                    required 
-                    class="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg bg-white/50 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 <?= $errors['password'] ? 'border-red-500' : '' ?>"
-                    aria-label="Password"
-                >
-                <i class='bx bxs-check-circle absolute top-1/2 right-9 transform -translate-y-1/2 text-green-500 text-lg sm:text-xl hidden' id="password-valid"></i>
+            <div class="error-message-email"><?= $errors['email'] ?></div>
+            <div class="input-group">
+                <i class='bx bxs-lock-alt icon-left'></i>
+                <i class='bx bx-show icon-right toggle-password'></i>
+                <input type="password" name="password" id="password" placeholder="Password" required>
             </div>
-            <div class="error-message text-red-600 text-xs sm:text-sm ml-2" id="password-error"><?= $errors['password'] ?></div>
-
-            <button 
-                type="submit" 
-                name="login" 
-                id="login-button" 
-                <?= $is_cooldown ? 'disabled' : '' ?>
-                class="w-full flex items-center justify-center px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-800 text-white font-medium rounded-lg text-sm sm:text-base hover:from-blue-700 hover:to-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-                <span class="button-content flex items-center gap-2">
-                    Login <i class='bx bx-right-arrow-alt'></i>
-                </span>
-            </button>
-            <a href="./registration/register.php" class="login-link text-blue-600 hover:underline transition-colors duration-200 text-sm sm:text-base block text-center mt-4">Don't have an account? Register</a>
+            <div class="error-message-password" id="password-error"><?= $errors['password'] ?></div>
+            <button type="submit" name="login" id="login-button" <?= $is_cooldown ? 'disabled' : '' ?>>Login</button>
+            <a href="./registration/register.php" class="register-link">Don't have an account? Register</a>
         </form>
     </div>
 
@@ -299,51 +363,7 @@ $connection->close();
         const togglePassword = document.querySelector('.toggle-password');
         const passwordInput = document.querySelector('#password');
         const loginButton = document.querySelector('#login-button');
-        const loginForm = document.querySelector('#login-form');
-        const emailInput = document.querySelector('#email');
-        const emailError = document.querySelector('#email-error');
-        const passwordError = document.querySelector('#password-error');
-        const emailValid = document.querySelector('#email-valid');
-        const passwordValid = document.querySelector('#password-valid');
-
-        function validateEmail(email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return emailRegex.test(email);
-        }
-
-        function validateForm() {
-            let valid = true;
-            emailError.textContent = '';
-            passwordError.textContent = '';
-            emailValid.classList.add('hidden');
-            passwordValid.classList.add('hidden');
-            emailInput.classList.remove('border-green-500', 'border-red-500');
-            passwordInput.classList.remove('border-green-500', 'border-red-500');
-
-            if (emailInput.value && !validateEmail(emailInput.value)) {
-                emailError.textContent = 'Please enter a valid email address.';
-                emailInput.classList.add('border-red-500');
-                valid = false;
-            } else if (emailInput.value) {
-                emailValid.classList.remove('hidden');
-                emailInput.classList.add('border-green-500');
-            }
-
-            if (passwordInput.value.length < 1 && passwordInput.value !== '') {
-                passwordError.textContent = 'Password is required.';
-                passwordInput.classList.add('border-red-500');
-                valid = false;
-            } else if (passwordInput.value) {
-                passwordValid.classList.remove('hidden');
-                passwordInput.classList.add('border-green-500');
-            }
-
-            loginButton.disabled = !valid;
-            loginButton.classList.toggle('disabled', !valid);
-        }
-
-        emailInput.addEventListener('input', validateForm);
-        passwordInput.addEventListener('input', validateForm);
+        const errorMessage = document.querySelector('#password-error');
 
         togglePassword.addEventListener('click', () => {
             const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
@@ -352,38 +372,22 @@ $connection->close();
             togglePassword.classList.toggle('bx-hide');
         });
 
-        loginForm.addEventListener('submit', (e) => {
-            validateForm(); // Validate on submit
-            if (!loginButton.disabled) {
-                loginButton.classList.add('loading');
-                loginButton.querySelector('.button-content').style.visibility = 'hidden';
-                setTimeout(() => {
-                    loginButton.classList.remove('loading');
-                    loginButton.querySelector('.button-content').style.visibility = 'visible';
-                }, 2000); // Simulate loading for 2 seconds
-            } else {
-                e.preventDefault(); // Prevent form submission if invalid
-            }
-        });
-
         <?php if ($is_cooldown): ?>
         let remainingTime = <?= $remaining_time ?>;
         loginButton.disabled = true;
-        loginButton.classList.add('disabled');
 
         function updateCooldown() {
             if (remainingTime <= 0) {
                 loginButton.disabled = false;
-                loginButton.classList.remove('disabled');
-                passwordError.textContent = '';
+                errorMessage.textContent = '';
                 return;
             }
 
             let errorText = `Too many login attempts. Please wait ${remainingTime} seconds.`;
             <?php if ($_SESSION['show_forgot_password']): ?>
-            errorText += ' <a href="./forgot_password/forgotpas.php" class="text-blue-600 hover:underline">Forgot Password?</a>';
+            errorText += ' <a href="./forgot_password/forgotpas.php">Forgot Password?</a>';
             <?php endif; ?>
-            passwordError.innerHTML = errorText;
+            errorMessage.innerHTML = errorText;
             remainingTime--;
             setTimeout(updateCooldown, 1000);
         }
