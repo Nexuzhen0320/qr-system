@@ -157,6 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login']) && !$is_cool
 $connection->close();
 ?>
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -167,7 +168,7 @@ $connection->close();
     <meta http-equiv="Expires" content="0">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="./image/icons/logo1.ico">
-    <script src="https://cdn.tailwindcss.com"></script>
+     <script src="https://cdn.tailwindcss.com"></script>
     <title>Login</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -418,4 +419,4 @@ $connection->close();
         <?php endif; ?>
     </script>
 </body>
-</html>
+</html> 

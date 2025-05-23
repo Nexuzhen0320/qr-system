@@ -3,7 +3,11 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
+<<<<<<< HEAD
 -- Generation Time: May 23, 2025 at 04:30 PM
+=======
+-- Generation Time: May 23, 2025 at 03:53 AM
+>>>>>>> f565602a46d92832e35390f372e3620bb8dfb018
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -51,6 +55,16 @@ CREATE TABLE `appointments` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `reference_id` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+<<<<<<< HEAD
+=======
+
+--
+-- Dumping data for table `appointments`
+--
+
+INSERT INTO `appointments` (`appointment_id`, `user_id`, `last_name`, `first_name`, `middle_name`, `gender`, `other_gender`, `birthdate`, `age`, `occupation`, `address`, `region`, `email`, `contact`, `appointment_date`, `appointment_time`, `purpose`, `profile_photo`, `status`, `created_at`, `updated_at`, `reference_id`) VALUES
+(1, 3, 'Tolentino', 'Niephrell', 'fernandez', 'Male', '', '2003-07-20', 21, 'student', 'Near La Finca de Gallo - Negros Province PH • Blk 23 Lot 2, Benares Street, Capitol Heights, Villamonte, Bacolod City, Negros Occidental, 6100, Region Vi: Western Visayas, Philippines', 'Negros Occidental', 'tolentinoniephrell@gmail.com', '9610703277', '2025-05-15', '09:09:00', 'checking', 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNj', 'Approved', '2025-05-01 09:05:46', '2025-05-23 01:49:04', 'NT-20250515');
+>>>>>>> f565602a46d92832e35390f372e3620bb8dfb018
 
 -- --------------------------------------------------------
 
@@ -70,6 +84,19 @@ CREATE TABLE `data` (
   `user_status` tinyint(1) NOT NULL DEFAULT 0 COMMENT '1 = Admin, 0 = Client'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+<<<<<<< HEAD
+=======
+--
+-- Dumping data for table `data`
+--
+
+INSERT INTO `data` (`user_id`, `email`, `password`, `otp`, `otp_send_time`, `verify_otp`, `ip`, `status_Account`, `user_status`) VALUES
+(1, 'nepneptolentino@gmail.com', '$2y$10$PNdh0cRmwzKQ0bdLhIHY1OzqB9fxA2ZSz/2atiLo2/WUHltTWXL.C', NULL, '2025-04-16 06:59:51', '588894', '::1', 'verified', 0),
+(3, 'tolentinoniephrell@gmail.com', '$2y$10$PAKoPg448lt0Xkm9mbYwPum6bM1XNYQ7gmNvBfYnIWBlERsopFucW', NULL, '2025-04-24 07:48:41', '419545', '::1', 'verified', 0),
+(4, 'emilyolayra@gmail.com', '$2y$10$XkUPU0QuVWm7kC5DqNUGnehSAeP.yf7lkRovwfqeeNKqiWsqv8662', NULL, NULL, '', '::1', 'verified', 1),
+(5, 'ismaelsaripada123@gmail.com', '$2y$10$b/zFvR70JKcEHzsKkekO6O91xKvxq7euGPo/yTeTmc.b68.90DlLO', NULL, '2025-05-19 05:11:18', '321005', '::1', 'verified', 0);
+
+>>>>>>> f565602a46d92832e35390f372e3620bb8dfb018
 -- --------------------------------------------------------
 
 --
@@ -136,7 +163,11 @@ ALTER TABLE `appointments`
 -- AUTO_INCREMENT for table `data`
 --
 ALTER TABLE `data`
+<<<<<<< HEAD
   MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT;
+=======
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+>>>>>>> f565602a46d92832e35390f372e3620bb8dfb018
 
 --
 -- AUTO_INCREMENT for table `user_information`
