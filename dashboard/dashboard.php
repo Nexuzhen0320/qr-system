@@ -14,10 +14,23 @@ if (!isset($_SESSION['status_Account']) || !isset($_SESSION['email']) || $_SESSI
 
 include '../database/db.php';
 
+// Initialize debug log
+$debug_log = [];
+
+// Check if database connection is successful
+if (!$connection) {
+    $debug_log[] = "Database connection failed: " . mysqli_connect_error();
+    die("Database connection failed. Please try again later.");
+}
+
 try {
     // Fetch user data
     $email = $_SESSION['email'];
     $stmt = $connection->prepare("SELECT user_id FROM data WHERE email = ?");
+    if ($stmt === false) {
+        $debug_log[] = "User query preparation failed: " . $connection->error;
+        throw new Exception("Failed to prepare user query.");
+    }
     $stmt->bind_param("s", $email);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -26,42 +39,66 @@ try {
     $stmt->close();
 
     if (!$user_id) {
+        $debug_log[] = "No user found for email: $email";
         header("Location: ../index.php");
         exit();
     }
 
-    // Fetch appointment details, including id_type
-    $stmt = $connection->prepare("
-        SELECT appointment_id, first_name, middle_name, last_name, gender, other_gender, birthdate, age, 
-               occupation, address, region, email, contact, appointment_date, appointment_time, purpose, 
-               profile_photo, id_type, id_number, id_photo, status, created_at 
-        FROM appointments 
-        WHERE user_id = ?
-    ");
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
+    // Fetch appointment details
+    $query = "SELECT appointment_id, first_name, middle_name, last_name, gender, other_gender, birthdate, age, 
+                     occupation, address, region, email, contact, appointment_date, appointment_time, purpose, 
+                     profile_photo, status, created_at 
+              FROM appointments 
+              WHERE user_id = ?";
+    $stmt = $connection->prepare($query);
+    if ($stmt === false) {
+        $debug_log[] = "Appointment query preparation failed: " . $connection->error;
+        throw new Exception("Failed to prepare appointment query: " . $connection->error);
+    }
+    $stmt->bind_param("i", $user_id); // Changed to "i" since user_id is int(11)
+    if (!$stmt->execute()) {
+        $debug_log[] = "Appointment query execution failed: " . $stmt->error;
+        throw new Exception("Failed to execute appointment query.");
+    }
     $result = $stmt->get_result();
     $appointment = $result->fetch_assoc();
     $stmt->close();
 
     if (!$appointment) {
+        $debug_log[] = "No appointment found for user_id: $user_id";
         header("Location: ../fillupform/fillupform.php");
         exit();
+    }
+
+    // Fetch ID details from user_information
+    $id_type = '';
+    $id_photo = '';
+    $is_valid_id_photo = false;
+    $id_photo_url = '';
+    $stmt = $connection->prepare("SELECT id_type, id_photo FROM user_information WHERE user_id = ?");
+    if ($stmt === false) {
+        $debug_log[] = "User information query preparation failed: " . $connection->error;
+    } else {
+        $stmt->bind_param("i", $user_id);
+        if ($stmt->execute()) {
+            $result = $stmt->get_result();
+            $user_info = $result->fetch_assoc();
+            $id_type = $user_info['id_type'] ?? '';
+            $id_photo = $user_info['id_photo'] ?? '';
+        } else {
+            $debug_log[] = "User information query execution failed: " . $stmt->error;
+        }
+        $stmt->close();
     }
 
     // Validate profile photo
     $is_valid_photo = false;
     $profile_photo = $appointment['profile_photo'] ?? $_SESSION['profilePhoto'] ?? '';
-    $debug_log = [];
-
-    // Define base paths for photo handling
     $base_server_path = '../ProfileImage/image/';
     $base_relative_url = './image/';
 
     if ($profile_photo) {
-        // Normalize stored path
         $profile_photo = ltrim($profile_photo, '/\\');
-        // Convert relative path to absolute server path
         $full_photo_path = str_replace('./image/', $base_server_path, $profile_photo);
         $debug_log[] = "Profile photo stored path: '$profile_photo', computed server path: '$full_photo_path'";
         if (file_exists($full_photo_path) && is_file($full_photo_path)) {
@@ -75,15 +112,8 @@ try {
     }
 
     // Validate ID photo
-    $is_valid_id_photo = false;
-    $id_photo = $appointment['id_photo'] ?? '';
-    $id_type = $appointment['id_type'] ?? '';
-    $id_number = $appointment['id_number'] ?? '';
-
     if ($id_photo) {
-        // Normalize stored path
         $id_photo = ltrim($id_photo, '/\\');
-        // Convert relative path to absolute server path
         $full_id_photo_path = str_replace('../image/', $base_server_path, $id_photo);
         $debug_log[] = "ID photo stored path: '$id_photo', computed server path: '$full_id_photo_path'";
         if (file_exists($full_id_photo_path) && is_file($full_id_photo_path)) {
@@ -97,9 +127,11 @@ try {
     }
 
 } catch (Exception $e) {
-    $debug_log[] = "Database error: " . $e->getMessage();
+    $debug_log[] = "Error: " . $e->getMessage();
 } finally {
-    $connection->close();
+    if (isset($connection) && $connection) {
+        $connection->close();
+    }
 }
 ?>
 
@@ -330,12 +362,17 @@ try {
             color: var(--warning-color);
         }
 
-        .status-accepted {
+        .status-approved {
             background: #d4edda;
             color: var(--success-color);
         }
 
-        .status-declined {
+        .status-rejected {
+            background: #f8d7da;
+            color: var(--danger-color);
+        }
+
+        .status-cancelled {
             background: #f8d7da;
             color: var(--danger-color);
         }
@@ -700,10 +737,11 @@ try {
                 Your appointment is <strong><?php echo htmlspecialchars($appointment['status']); ?></strong>.
                 <?php
                 switch ($appointment['status']) {
-                    case 'Accepted':
+                    case 'Approved':
                         echo 'Please arrive on time for your appointment.';
                         break;
-                    case 'Declined':
+                    case 'Rejected':
+                    case 'Cancelled':
                         echo 'Please submit a new appointment or contact support.';
                         break;
                     default:
@@ -711,6 +749,12 @@ try {
                 }
                 ?>
             </div>
+            <?php if (!empty($debug_log)): ?>
+                <div class="debug-log">
+                    <strong>Debug Log:</strong><br>
+                    <?php echo nl2br(htmlspecialchars(implode("\n", $debug_log))); ?>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -728,7 +772,6 @@ try {
                     <div class="id-placeholder">No ID Photo Available</div>
                 <?php endif; ?>
                 <p class="id-type"><strong>ID Type:</strong> <?php echo htmlspecialchars($id_type ?: 'Not Provided'); ?></p>
-                <p class="id-number"><strong>ID Number:</strong> <?php echo htmlspecialchars($id_number ?: 'Not Provided'); ?></p>
             </div>
         </div>
     </div>

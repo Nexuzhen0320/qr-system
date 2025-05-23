@@ -53,18 +53,27 @@ session_start();
             100% { opacity: 1; transform: translateY(0); }
         }
 
-        .loading::after {
+        #submit-btn {
+            position: relative; /* Create positioning context for the spinner */
+        }
+
+        #submit-btn.loading .button-content {
+            display: none; /* Hide button content during loading */
+        }
+
+        #submit-btn.loading::after {
             content: '';
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 1.5rem;
-            height: 1.5rem;
+            width: 1.25rem; /* Slightly smaller spinner for better fit */
+            height: 1.25rem;
             border: 3px solid #fff;
             border-top: 3px solid transparent;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            z-index: 10; /* Ensure spinner is above other content */
         }
 
         @keyframes spin {
@@ -262,7 +271,7 @@ session_start();
                 try {
                     submitButton.disabled = true;
                     submitButton.classList.add('loading');
-                    submitButton.querySelector('.button-content').style.visibility = 'hidden';
+                    submitButton.querySelector('.button-content').style.display = 'none';
 
                     const formData = new FormData(form);
                     const response = await fetch("../authentication/send.php", {
@@ -287,7 +296,7 @@ session_start();
                         formMessage.textContent = data.message || 'Registration failed. Please try again.';
                         submitButton.disabled = false;
                         submitButton.classList.remove('loading');
-                        submitButton.querySelector('.button-content').style.visibility = 'visible';
+                        submitButton.querySelector('.button-content').style.display = 'flex';
                     }
                 } catch (error) {
                     console.error('Fetch error:', {
@@ -298,7 +307,7 @@ session_start();
                     formMessage.textContent = `Registration error: ${error.message.includes('HTTP error') ? 'Server error. Please try again later.' : 'Network error. Please check your connection.'}`;
                     submitButton.disabled = false;
                     submitButton.classList.remove('loading');
-                    submitButton.querySelector('.button-content').style.visibility = 'visible';
+                    submitButton.querySelector('.button-content').style.display = 'flex';
                 }
             }
         });

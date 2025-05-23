@@ -11,14 +11,18 @@ header("Expires: 0");
 if (isset($_SESSION['status_Account']) && $_SESSION['status_Account'] === 'logged_in' && isset($_SESSION['email'])) {
     try {
         $email = $_SESSION['email'];
-        $stmt = $connection->prepare("SELECT status_Account FROM data WHERE email = ?");
+        $stmt = $connection->prepare("SELECT status_Account, user_status FROM data WHERE email = ?");
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $result = $stmt->get_result();
         if ($result->num_rows > 0) {
             $row = $result->fetch_assoc();
             if ($row['status_Account'] === 'verified') {
-                header("Location: ./dashboard/dashboard.php");
+                if ($row['user_status'] == 1) {
+                    header("Location: ./admin/admin_dashboard.php");
+                } else {
+                    header("Location: ./dashboard/dashboard.php");
+                }
                 exit;
             } else {
                 header("Location: ./authentication/verify.php");
@@ -77,16 +81,12 @@ if ($_SESSION['login_attempts'] >= 5 && $_SESSION['cooldown_start'] > 0) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login']) && !$is_cooldown) {
     $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
-    $_SESSION['last_login_email'] = $email; // Store email for forgot password validation
+    $_SESSION['last_login_email'] = $email;
     $password = $_POST['password'];
 
-    if (empty($email)) {
-        $errors['email'] = 'Email is required.';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errors['email'] = 'Please enter a valid email address.';
-    }
-    if (empty($password)) {
-        $errors['password'] = 'Password is required.';
+    if (empty($email) || empty($password)) {
+        $errors['email'] = empty($email) ? 'Email is required.' : '';
+        $errors['password'] = empty($password) ? 'Password is required.' : '';
     } else {
         try {
             $stmt = $connection->prepare("SELECT * FROM data WHERE email = ?");
@@ -101,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login']) && !$is_cool
                 $row = $result->fetch_assoc();
                 if (password_verify($password, $row['password'])) {
                     // Successful login
-                    session_regenerate_id(true); // Regenerate session ID for security
+                    session_regenerate_id(true);
                     $_SESSION['login_attempts'] = 0;
                     $_SESSION['cooldown_start'] = 0;
                     $_SESSION['show_forgot_password'] = false;
@@ -111,42 +111,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login']) && !$is_cool
                     $_SESSION['verify_otp'] = $row['verify_otp'];
 
                     if ($row['status_Account'] === 'verified') {
-                        header("Location: ./dashboard/dashboard.php");
+                        if ($row['user_status'] == 1) {
+                            header("Location: ./admin/admin_dashboard.php");
+                        } else {
+                            header("Location: ./dashboard/dashboard.php");
+                        }
                         exit;
                     } else {
                         header("Location: ./authentication/verify.php");
                         exit;
                     }
                 } else {
-                    // Failed attempt
+                    // Failed password
                     $_SESSION['login_attempts']++;
                     $_SESSION['show_forgot_password'] = true;
                     $errors['password'] = 'Invalid Email or Password. Please try again.';
-                    if ($_SESSION['show_forgot_password']) {
-                        $errors['password'] .= ' <a href="./forgot_password/forgotpas.php" class="text-blue-600 hover:underline">Forgot Password?</a>';
-                    }
                     if ($_SESSION['login_attempts'] >= 5) {
                         $_SESSION['cooldown_start'] = time();
                         $errors['password'] = 'Too many login attempts. Please wait ' . $cooldown_duration . ' seconds.';
-                        if ($_SESSION['show_forgot_password']) {
-                            $errors['password'] .= ' <a href="./forgot_password/forgotpas.php" class="text-blue-600 hover:underline">Forgot Password?</a>';
-                        }
+                    }
+                    if ($_SESSION['show_forgot_password']) {
+                        $errors['password'] .= ' <a href="./forgot_password/forgotpas.php">Forgot Password?</a>';
                     }
                 }
             } else {
-                // Failed attempt
+                // Email not found
                 $_SESSION['login_attempts']++;
                 $_SESSION['show_forgot_password'] = true;
                 $errors['email'] = 'No account found with that email.';
-                if ($_SESSION['show_forgot_password']) {
-                    $errors['email'] .= ' <a href="./registration/register.php" class="text-blue-600 hover:underline">Register Here</a>';
-                }
                 if ($_SESSION['login_attempts'] >= 5) {
                     $_SESSION['cooldown_start'] = time();
                     $errors['password'] = 'Too many login attempts. Please wait ' . $cooldown_duration . ' seconds.';
-                    if ($_SESSION['show_forgot_password']) {
-                        $errors['password'] .= '<a href="./forgot_password/forgotpas.php" class="text-blue-600 hover:underline">Forgot Password?</a>';
-                    }
+                }
+                if ($_SESSION['show_forgot_password']) {
+                    $errors['email'] .= ' <a href="./registration/register.php">Register Here</a>';
                 }
             }
             $stmt->close();
@@ -253,6 +251,18 @@ $connection->close();
 
         .form-container a:hover {
             text-decoration: underline;
+        }
+
+        /* Mobile-specific adjustments for email check icon */
+        @media (max-width: 576px) {
+            .input-group input[type="email"] {
+                padding-right: 2.5rem; /* Increase padding to avoid text overlap */
+            }
+
+            #email-valid {
+                right: 0.75rem; /* Move icon further from text */
+                font-size: 1rem; /* Smaller icon size for mobile */
+            }
         }
     </style>
 </head>
