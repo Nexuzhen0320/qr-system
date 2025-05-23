@@ -211,23 +211,38 @@ $connection->close();
             100% { opacity: 1; transform: translateY(0); }
         }
 
+        #login-button {
+            position: relative; /* Establish positioning context for the spinner */
+        }
+
         .loading::after {
             content: '';
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 1.5rem;
-            height: 1.5rem;
-            border: 3px solid #fff;
-            border-top: 3px solid transparent;
+            width: 1.25rem; /* Slightly smaller for better fit */
+            height: 1.25rem;
+            border: 2px solid #fff; /* Thinner border for proportionality */
+            border-top: 2px solid transparent;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            animation: spin 0.8s linear infinite;
+            z-index: 10; /* Ensure spinner is above button content */
         }
 
         @keyframes spin {
             0% { transform: translate(-50%, -50%) rotate(0deg); }
             100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .loading .button-content {
+            opacity: 0; /* Fade out content smoothly */
+            transition: opacity 0.2s ease-in-out;
+        }
+
+        .button-content {
+            opacity: 1;
+            transition: opacity 0.2s ease-in-out;
         }
 
         /* Ensure all links within the form-container are blue */
@@ -339,7 +354,8 @@ $connection->close();
             }
 
             loginButton.disabled = !valid;
-            loginButton.classList.toggle('disabled', !valid);
+            loginButton.classList.toggle('disabled:bg-gray-400', !valid);
+            loginButton.classList.toggle('disabled:cursor-not-allowed', !valid);
         }
 
         emailInput.addEventListener('input', validateForm);
@@ -356,10 +372,10 @@ $connection->close();
             validateForm(); // Validate on submit
             if (!loginButton.disabled) {
                 loginButton.classList.add('loading');
-                loginButton.querySelector('.button-content').style.visibility = 'hidden';
+                loginButton.querySelector('.button-content').style.opacity = '0';
                 setTimeout(() => {
                     loginButton.classList.remove('loading');
-                    loginButton.querySelector('.button-content').style.visibility = 'visible';
+                    loginButton.querySelector('.button-content').style.opacity = '1';
                 }, 2000); // Simulate loading for 2 seconds
             } else {
                 e.preventDefault(); // Prevent form submission if invalid
@@ -369,12 +385,12 @@ $connection->close();
         <?php if ($is_cooldown): ?>
         let remainingTime = <?= $remaining_time ?>;
         loginButton.disabled = true;
-        loginButton.classList.add('disabled');
+        loginButton.classList.add('disabled:bg-gray-400', 'disabled:cursor-not-allowed');
 
         function updateCooldown() {
             if (remainingTime <= 0) {
                 loginButton.disabled = false;
-                loginButton.classList.remove('disabled');
+                loginButton.classList.remove('disabled:bg-gray-400', 'disabled:cursor-not-allowed');
                 passwordError.textContent = '';
                 return;
             }

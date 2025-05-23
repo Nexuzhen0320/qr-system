@@ -160,6 +160,7 @@ try {
             box-shadow: var(--shadow);
             transform: translateX(0);
             transition: transform var(--transition-speed) ease;
+            z-index: 1000;
         }
 
         .sidebar .logo {
@@ -177,7 +178,7 @@ try {
             font-size: 18px;
             font-weight: 500;
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             opacity: 0;
             animation: slideIn 0.5s ease forwards 0.2s;
         }
@@ -216,17 +217,50 @@ try {
             transform: translateX(5px);
         }
 
+        .sidebar .close-sidebar {
+            display: none;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 24px;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            transition: color var(--transition-speed);
+        }
+
+        .sidebar .close-sidebar:hover {
+            color: var(--secondary-color);
+        }
+
         .main-content {
             margin-left: 250px;
-            padding: 30px;
+            padding: 20px;
             width: calc(100% - 250px);
+            transition: margin-left var(--transition-speed), width var(--transition-speed);
+        }
+
+        .menu-toggle {
+            background: var(--primary-color);
+            color: #ffffff;
+            border: none;
+            padding: 6px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background var(--transition-speed);
+        }
+
+        .menu-toggle:hover {
+            background: var(--primary-hover);
         }
 
         .dashboard-header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
+            gap: 10px;
+            margin-bottom: 20px;
             opacity: 0;
             animation: slideIn 0.5s ease forwards 0.3s;
         }
@@ -235,13 +269,14 @@ try {
             font-size: 24px;
             font-weight: 700;
             color: var(--text-color);
+            flex-grow: 1;
         }
 
         .card {
             background: #ffffff;
             border-radius: 8px;
             box-shadow: var(--shadow);
-            padding: 25px;
+            padding: 20px;
             margin-bottom: 20px;
             opacity: 0;
             transform: translateY(20px);
@@ -313,8 +348,8 @@ try {
         }
 
         .profile-photo {
-            width: 120px;
-            height: 120px;
+            width: 100px;
+            height: 100px;
             border-radius: 8px;
             object-fit: cover;
             border: 1px solid var(--border-color);
@@ -326,17 +361,18 @@ try {
         }
 
         .profile-placeholder {
-            width: 120px;
-            height: 120px;
+            width: 100px;
+            height: 100px;
             border-radius: 8px;
             background: var(--secondary-color);
             border: 1px solid var(--border-color);
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 14px;
+            font-size: 12px;
             color: var(--text-color);
             transition: transform var(--transition-speed);
+            text-align: center;
         }
 
         .profile-placeholder:hover {
@@ -414,7 +450,7 @@ try {
             color: var(--text-color);
         }
 
-        .close-btn {
+        .modal .close-btn {
             background: none;
             border: none;
             font-size: 20px;
@@ -423,7 +459,7 @@ try {
             transition: color var(--transition-speed);
         }
 
-        .close-btn:hover {
+        .modal .close-btn:hover {
             color: var(--primary-color);
         }
 
@@ -485,7 +521,7 @@ try {
             .main-content {
                 margin-left: 200px;
                 width: calc(100% - 200px);
-                padding: 20px;
+                padding: 15px;
             }
 
             .dashboard-header h1 {
@@ -506,33 +542,91 @@ try {
             }
 
             .modal-content {
-                max-width: 90%;
+                max-width: 95%;
             }
         }
 
         @media (max-width: 576px) {
             .sidebar {
-                position: static;
-                width: 100%;
-                height: auto;
+                position: fixed;
+                width: 250px;
+                height: 100vh;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
                 transform: translateX(0);
+            }
+
+            .sidebar .close-sidebar {
+                display: block;
             }
 
             .main-content {
                 margin-left: 0;
                 width: 100%;
+                padding: 10px;
+            }
+
+            .main-content.sidebar-active {
+                margin-left: 250px;
+                width: calc(100% - 250px);
+            }
+
+            .menu-toggle {
+                padding: 5px;
+                font-size: 16px;
+            }
+
+            .dashboard-header {
+                padding: 10px;
+                gap: 8px;
+            }
+
+            .dashboard-header h1 {
+                font-size: 14px;
+                line-height: 1.2;
+            }
+
+            .card {
+                padding: 10px;
+            }
+
+            .profile-photo,
+            .profile-placeholder {
+                width: 80px;
+                height: 80px;
+                font-size: 10px;
             }
 
             .id-photo,
             .id-placeholder {
                 width: 150px;
                 height: 150px;
+                font-size: 12px;
+            }
+
+            .appointment-details p {
+                font-size: 13px;
+            }
+
+            .status-message {
+                font-size: 13px;
+                padding: 10px;
+            }
+
+            .view-id-btn {
+                padding: 6px 12px;
+                font-size: 13px;
             }
         }
     </style>
 </head>
 <body>
     <div class="sidebar">
+        <button class="close-sidebar" aria-label="Close Sidebar">
+            <i class='bx bx-x'></i>
+        </button>
         <img src="../image/icons/logo1.ico" alt="Organization Logo" class="logo">
         <h2>Dashboard</h2>
         <a href="../dashboard.php" class="active" aria-current="page">Dashboard</a>
@@ -541,6 +635,9 @@ try {
     </div>
     <div class="main-content">
         <div class="dashboard-header">
+            <button class="menu-toggle" aria-label="Toggle Sidebar" aria-expanded="false">
+                <i class='bx bx-menu'></i>
+            </button>
             <h1>Welcome to Your Dashboard</h1>
         </div>
         <div class="card">
@@ -644,16 +741,45 @@ try {
                 debugLog.style.display = 'block';
             }
 
+            // Sidebar toggle functionality
+            const sidebar = document.querySelector('.sidebar');
+            const menuToggle = document.querySelector('.menu-toggle');
+            const closeSidebar = document.querySelector('.close-sidebar');
+            const mainContent = document.querySelector('.main-content');
+            const isMobile = window.matchMedia('(max-width: 576px)').matches;
+
+            function toggleSidebar() {
+                const isActive = sidebar.classList.toggle('active');
+                mainContent.classList.toggle('sidebar-active', isActive);
+                menuToggle.setAttribute('aria-expanded', isActive);
+            }
+
+            function closeSidebarOnMobile() {
+                if (window.matchMedia('(max-width: 576px)').matches) {
+                    sidebar.classList.remove('active');
+                    mainContent.classList.remove('sidebar-active');
+                    menuToggle.setAttribute('aria-expanded', 'false');
+                }
+            }
+
+            menuToggle.addEventListener('click', toggleSidebar);
+            closeSidebar.addEventListener('click', closeSidebarOnMobile);
+
+            // Auto-close sidebar on navigation link click for mobile
+            document.querySelectorAll('.sidebar a').forEach(link => {
+                link.addEventListener('click', closeSidebarOnMobile);
+            });
+
             // Modal functionality
             const viewIdBtn = document.querySelector('.view-id-btn');
             const idModal = document.querySelector('#idModal');
-            const closeBtn = document.querySelector('.close-btn');
+            const modalCloseBtn = document.querySelector('.modal .close-btn');
 
             viewIdBtn.addEventListener('click', function() {
                 idModal.classList.add('show');
             });
 
-            closeBtn.addEventListener('click', function() {
+            modalCloseBtn.addEventListener('click', function() {
                 idModal.classList.remove('show');
             });
 
@@ -666,8 +792,13 @@ try {
 
             // Close modal with Escape key
             document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && idModal.classList.contains('show')) {
-                    idModal.classList.remove('show');
+                if (e.key === 'Escape') {
+                    if (idModal.classList.contains('show')) {
+                        idModal.classList.remove('show');
+                    }
+                    if (isMobile && sidebar.classList.contains('active')) {
+                        closeSidebarOnMobile();
+                    }
                 }
             });
 
@@ -677,6 +808,11 @@ try {
                     window.location.reload();
                 }
             });
+
+            // Close sidebar on initial load for mobile
+            if (isMobile) {
+                closeSidebarOnMobile();
+            }
         });
     </script>
 </body>

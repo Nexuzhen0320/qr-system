@@ -52,6 +52,28 @@ define('RELATIVE_UPLOAD_DIR', '../ProfileImage/image/IdPhoto/');
 define('PROFILE_PHYSICAL_UPLOAD_DIR', '../ProfileImage/image/Profile_Photo/');
 define('PROFILE_RELATIVE_UPLOAD_DIR', '../ProfileImage/image/Profile_Photo/');
 
+// List of valid regions
+$valid_regions = [
+    'Region I – Ilocos Region',
+    'Region II – Cagayan Valley',
+    'Region III – Central Luzon',
+    'Region IV-A – CALABARZON',
+    'MIMAROPA Region',
+    'Region V – Bicol Region',
+    'Region VI – Western Visayas',
+    'Region VII – Central Visayas',
+    'Region VIII – Eastern Visayas',
+    'Region IX – Zamboanga Peninsula',
+    'Region X – Northern Mindanao',
+    'Region XI – Davao Region',
+    'Region XII – SOCCSKSARGEN',
+    'Region XIII – Caraga',
+    'NCR – National Capital Region',
+    'CAR – Cordillera Administrative Region',
+    'BARMM – Bangsamoro Autonomous Region in Muslim Mindanao',
+    'NIR – Negros Island Region'
+];
+
 // Function to generate a unique appointment ID
 function generateAppointmentId($connection) {
     $maxRetries = 5;
@@ -276,7 +298,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_appointment'])
     if (empty($age) || $age < 1 || $age > 120) $errors['age'] = 'Valid age (1-120) is required.';
     if (empty($occupation)) $errors['occupation'] = 'Occupation is required.';
     if (empty($address)) $errors['address'] = 'Address is required.';
-    if (empty($region)) $errors['region'] = 'Region is required.';
+    if (empty($region) || !in_array($region, $valid_regions)) $errors['region'] = 'Please select a valid region.';
     if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors['email'] = 'Valid email is required.';
     if (empty($contact) || !preg_match('/^[0-9]{10}$/', $contact)) $errors['contact'] = 'Valid 10-digit contact number is required.';
     if (empty($appointment_date)) $errors['appointmentDate'] = 'Appointment date is required.';
@@ -576,7 +598,7 @@ $connection->close();
             padding-right: 2rem;
         }
 
-        input[disabled] {
+        input[readonly] {
             background: #f5f5f5;
             color: #666;
             cursor: not-allowed;
@@ -1006,7 +1028,15 @@ $connection->close();
                 </div>
                 <div class="form-group">
                     <label for="region" class="label required">Region</label>
-                    <input type="text" id="region" name="region" required autocomplete="off" aria-required="true" placeholder="Enter your region">
+                    <select id="region" name="region" required aria-required="true" aria-describedby="region-help">
+                        <option value="" selected disabled>Select a Region</option>
+                        <?php foreach ($valid_regions as $region_option): ?>
+                            <option value="<?php echo htmlspecialchars($region_option); ?>">
+                                <?php echo htmlspecialchars($region_option); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <div class="photo-upload-note">Please select your region from the list.</div>
                     <span class="error" id="region-error"><?php echo htmlspecialchars($errors['region'] ?? ''); ?></span>
                 </div>
                 <div class="form-row">
@@ -1037,15 +1067,15 @@ $connection->close();
                         <span class="error" id="appointmentDate-error"><?php echo htmlspecialchars($errors['appointmentDate'] ?? ''); ?></span>
                     </div>
                     <div class="form-group">
-                        <label for="appointmentTime" class="label required">Appointment Time (5:00 AM - 10:00 PM)</label>
-                        <input type="time" id="appointmentTime" name="appointmentTime" required autocomplete="off" min="05:00" max="22:00" aria-required="true">
-                        <div class="photo-upload-note">Available from 5:00 AM to 10:00 PM</div>
+                        <label for="appointmentTime" class="label required">Appointment Time (Fixed at 10:00 AM)</label>
+                        <input type="time" id="appointmentTime" name="appointmentTime" required autocomplete="off" min="05:00" max="22:00" value="10:00" readonly aria-required="true">
+                        <div class="photo-upload-note">Fixed at 10:00 AM</div>
                         <span class="error" id="appointmentTime-error"><?php echo htmlspecialchars($errors['appointmentTime'] ?? ''); ?></span>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="purpose" class="label required">Purpose of Appointment</label>
-                    <input type="text" id="purpose" name="purpose" required autocomplete="off" aria-required="true" placeholder="Enter the purpose of your appointment">
+                    <input type="text" id="purpose" name="purpose" required autocomplete="off" aria-required="true" value="Orientation" placeholder="Enter the purpose of your appointment">
                     <span class="error" id="purpose-error"><?php echo htmlspecialchars($errors['purpose'] ?? ''); ?></span>
                 </div>
             </div>
@@ -1123,7 +1153,8 @@ $connection->close();
                 idPhotoSuccess: document.getElementById('idPhotoSuccess'),
                 idPhotoProgress: document.getElementById('idPhotoProgress'),
                 compressedImage: document.getElementById('compressedImage'),
-                actionButtons: document.getElementById('actionButtons')
+                actionButtons: document.getElementById('actionButtons'),
+                region: document.getElementById('region')
             };
 
             // Initialize debug log visibility
@@ -1170,11 +1201,6 @@ $connection->close();
                 validateField('contact', e.target.value);
             });
 
-            // Restrict Appointment Time
-            elements.appointmentTime.addEventListener('input', () => {
-                validateField('appointmentTime', elements.appointmentTime.value);
-            });
-
             // Image Compression
             const compressImage = (file, maxSizeMB, targetSize, callback) => {
                 const maxSizeBytes = maxSizeMB * 1024 * 1024;
@@ -1218,7 +1244,8 @@ $connection->close();
                                     elements.idPhotoSpinner.style.display = 'none';
                                     elements.idPhotoProgress.style.display = 'none';
                                 });
-                        } catch {
+                        } catch (error) {
+                            console.error('Image compression error:', error);
                             showError('idPhoto', 'Error processing image.');
                             elements.idPhotoSpinner.style.display = 'none';
                             elements.idPhotoProgress.style.display = 'none';
@@ -1323,7 +1350,8 @@ $connection->close();
                                     elements.compressedImage.value = '';
                                 }
                             })
-                            .catch(() => {
+                            .catch(error => {
+                                console.error('Upload error:', error);
                                 elements.idPhotoSpinner.style.display = 'none';
                                 showError('idPhoto', 'Network error.');
                                 elements.idPhotoPreview.src = '';
@@ -1366,7 +1394,8 @@ $connection->close();
                             showError('idPhoto', 'Error removing ID photo.');
                         }
                     })
-                    .catch(() => {
+                    .catch(error => {
+                        console.error('Remove photo error:', error);
                         elements.idPhotoSpinner.style.display = 'none';
                         showError('idPhoto', 'Network error.');
                     });
@@ -1378,44 +1407,63 @@ $connection->close();
 
             // Real-time Validation
             const validateField = (id, value) => {
-                switch (id) {
-                    case 'lastName':
-                    case 'firstName':
-                    case 'occupation':
-                    case 'address':
-                    case 'region':
-                    case 'purpose':
-                        showError(id, value.trim() ? '' : `${id.charAt(0).toUpperCase() + id.slice(1)} is required.`);
-                        break;
-                    case 'email':
-                        showError(id, /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? '' : 'Please enter a valid email.');
-                        break;
-                    case 'contact':
-                        showError(id, /^[0-9]{10}$/.test(value) ? '' : 'Please enter a valid 10-digit number.');
-                        break;
-                    case 'age':
-                        showError(id, (value >= 1 && value <= 120) ? '' : 'Age must be between 1 and 120.');
-                        break;
-                    case 'idNumber':
-                        showError(id, /^[A-Za-z0-9-]{1,50}$/.test(value) ? '' : 'ID number must be alphanumeric (up to 50 characters).');
-                        break;
-                    case 'gender':
-                        showError(id, value ? '' : 'Please select a gender.');
-                        if (value === 'Other') {
-                            const otherValue = document.getElementById('othergender').value;
-                            showError('othergender', otherValue.trim() ? '' : 'Please specify your gender.');
-                        }
-                        break;
-                    case 'idType':
-                        showError(id, value ? '' : 'Please select a valid ID type.');
-                        break;
-                    case 'appointmentTime':
-                        showError(id, value && value >= '05:00' && value <= '22:00' ? '' : 'Time must be between 5:00 AM and 10:00 PM.');
-                        break;
+                const fieldLabels = {
+                    lastName: 'Last name',
+                    firstName: 'First name',
+                    occupation: 'Occupation',
+                    address: 'Address',
+                    purpose: 'Purpose',
+                    region: 'Region',
+                    email: 'Email',
+                    contact: 'Contact number',
+                    age: 'Age',
+                    idNumber: 'ID number',
+                    gender: 'Gender',
+                    idType: 'ID type'
+                };
+
+                try {
+                    switch (id) {
+                        case 'lastName':
+                        case 'firstName':
+                        case 'occupation':
+                        case 'address':
+                        case 'purpose':
+                            showError(id, value.trim() ? '' : `${fieldLabels[id]} is required.`);
+                            break;
+                        case 'region':
+                            showError(id, value.trim() ? '' : 'Please select a valid region.');
+                            break;
+                        case 'email':
+                            showError(id, /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? '' : 'Please enter a valid email.');
+                            break;
+                        case 'contact':
+                            showError(id, /^[0-9]{10}$/.test(value) ? '' : 'Please enter a valid 10-digit number.');
+                            break;
+                        case 'age':
+                            showError(id, (value >= 1 && value <= 120) ? '' : 'Age must be between 1 and 120.');
+                            break;
+                        case 'idNumber':
+                            showError(id, /^[A-Za-z0-9-]{1,50}$/.test(value) ? '' : 'ID number must be alphanumeric (up to 50 characters).');
+                            break;
+                        case 'gender':
+                            showError(id, value ? '' : 'Please select a gender.');
+                            if (value === 'Other') {
+                                const otherValue = document.getElementById('othergender').value;
+                                showError('othergender', otherValue.trim() ? '' : 'Please specify your gender.');
+                            }
+                            break;
+                        case 'idType':
+                            showError(id, value ? '' : 'Please select a valid ID type.');
+                            break;
+                    }
+                } catch (error) {
+                    console.error(`Validation error for ${id}:`, error);
+                    showError(id, 'Validation error occurred.');
                 }
             };
 
-            ['lastName', 'firstName', 'occupation', 'address', 'region', 'purpose', 'email', 'contact', 'age', 'idNumber', 'gender', 'idType', 'appointmentTime'].forEach(id => {
+            ['lastName', 'firstName', 'occupation', 'address', 'region', 'purpose', 'email', 'contact', 'age', 'idNumber', 'gender', 'idType'].forEach(id => {
                 const input = document.getElementById(id);
                 if (input) {
                     input.addEventListener('input', debounce(e => validateField(id, e.target.value), 300));
@@ -1433,7 +1481,7 @@ $connection->close();
                     { id: 'age', message: 'Age is required.' },
                     { id: 'occupation', message: 'Occupation is required.' },
                     { id: 'address', message: 'Address is required.' },
-                    { id: 'region', message: 'Region is required.' },
+                    { id: 'region', message: 'Please select a valid region.' },
                     { id: 'email', message: 'Email is required.' },
                     { id: 'contact', message: 'Contact number is required.' },
                     { id: 'appointmentDate', message: 'Appointment date is required.' },
@@ -1443,40 +1491,51 @@ $connection->close();
                     { id: 'idNumber', message: 'ID number is required.' }
                 ];
 
-                fields.forEach(field => {
-                    const input = document.getElementById(field.id);
-                    if (!input || !input.value.trim()) {
-                        showError(field.id, field.message);
-                        isValid = false;
-                    } else {
-                        validateField(field.id, input.value);
-                        if (document.getElementById(`${field.id}-error`).style.display === 'block') {
+                try {
+                    fields.forEach(field => {
+                        const input = document.getElementById(field.id);
+                        if (!input || !input.value.trim()) {
+                            showError(field.id, field.message);
+                            isValid = false;
+                        } else {
+                            validateField(field.id, input.value);
+                            if (document.getElementById(`${field.id}-error`).style.display === 'block') {
+                                isValid = false;
+                            }
+                        }
+                    });
+
+                    if (elements.gender.value === 'Other') {
+                        const othergenderInput = document.getElementById('othergender');
+                        if (!othergenderInput.value.trim()) {
+                            showError('othergender', 'Please specify your gender.');
                             isValid = false;
                         }
                     }
-                });
 
-                if (elements.gender.value === 'Other') {
-                    const othergenderInput = document.getElementById('othergender');
-                    if (!othergenderInput.value.trim()) {
-                        showError('othergender', 'Please specify your gender.');
+                    // Sanitized photo validation
+                    const profilePhoto = '<?php echo addslashes($_SESSION['profilePhoto'] ?? ''); ?>';
+                    const profilePhotoPath = '<?php echo addslashes(str_replace(PROFILE_RELATIVE_UPLOAD_DIR, PROFILE_PHYSICAL_UPLOAD_DIR, $_SESSION['profilePhoto'] ?? '')); ?>';
+                    if (!profilePhoto || !profilePhotoPath) {
+                        showError('myFile', 'Please upload a profile photo.');
                         isValid = false;
+                    } else {
+                        showError('myFile', '');
                     }
+
+                    const idPhoto = '<?php echo addslashes($_SESSION['idPhoto'] ?? ''); ?>';
+                    const idPhotoPath = '<?php echo addslashes(str_replace(RELATIVE_UPLOAD_DIR, PHYSICAL_UPLOAD_DIR, $_SESSION['idPhoto'] ?? '')); ?>';
+                    if (!idPhoto || !idPhotoPath) {
+                        showError('idPhoto', 'Please upload an ID photo.');
+                        isValid = false;
+                    } else {
+                        showError('idPhoto', '');
+                    }
+                } catch (error) {
+                    console.error('Form validation error:', error);
+                    showError('errorMessage', 'Form validation error occurred.');
+                    isValid = false;
                 }
-
-                <?php if (empty($_SESSION['profilePhoto']) || !file_exists(str_replace(PROFILE_RELATIVE_UPLOAD_DIR, PROFILE_PHYSICAL_UPLOAD_DIR, $_SESSION['profilePhoto']))): ?>
-                    showError('myFile', 'Please upload a profile photo.');
-                    isValid = false;
-                <?php else: ?>
-                    showError('myFile', '');
-                <?php endif; ?>
-
-                <?php if (empty($_SESSION['idPhoto']) || !file_exists(str_replace(RELATIVE_UPLOAD_DIR, PHYSICAL_UPLOAD_DIR, $_SESSION['idPhoto']))): ?>
-                    showError('idPhoto', 'Please upload an ID photo.');
-                    isValid = false;
-                <?php else: ?>
-                    showError('idPhoto', '');
-                <?php endif; ?>
 
                 return isValid;
             };
@@ -1532,9 +1591,9 @@ $connection->close();
                         }
                     })
                     .catch(error => {
+                        console.error('Submission error:', error);
                         elements.loadingSpinner.style.display = 'none';
                         showError('errorMessage', 'An error occurred during submission.');
-                        console.error('Error:', error);
                     });
             });
 
