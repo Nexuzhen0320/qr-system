@@ -50,7 +50,7 @@ try {
     // Define base paths for file uploads and display
     $base_server_path = realpath(__DIR__ . '/../../ProfileImage/image/') . '/';
     $base_relative_url = '../ProfileImage/image/'; // Used for database storage
-    $base_display_url = '/system-new/ProfileImage/image/'; // Absolute URL for image display
+    $base_display_url = '/ProfileImage/image/'; // Absolute URL for image display
     $profile_photo_dir = $base_server_path . 'Profile_Photo/';
     $id_photo_dir = $base_server_path . 'IdPhoto/';
 
@@ -99,7 +99,7 @@ try {
     if ($appointment['profile_photo']) {
         $db_profile_path = $appointment['profile_photo'];
         // Handle legacy or incorrect paths
-        if (strpos($db_profile_path, '../ProfileImage/image/') !== 0 && strpos($db_profile_path, '/system-new/ProfileImage/image/') !== 0) {
+        if (strpos($db_profile_path, '../ProfileImage/image/') !== 0 && strpos($db_profile_path, '/ProfileImage/image/') !== 0) {
             $debug_log[] = "Non-standard profile photo path detected: '$db_profile_path'";
             $filename = basename($db_profile_path);
             $db_profile_path = "../ProfileImage/image/Profile_Photo/$filename";
@@ -117,7 +117,7 @@ try {
     if ($appointment['id_photo']) {
         $db_id_path = $appointment['id_photo'];
         // Handle legacy or incorrect paths
-        if (strpos($db_id_path, '../ProfileImage/image/') !== 0 && strpos($db_id_path, '/system-new/ProfileImage/image/') !== 0) {
+        if (strpos($db_id_path, '../ProfileImage/image/') !== 0 && strpos($db_id_path, '/ProfileImage/image/') !== 0) {
             $debug_log[] = "Non-standard ID photo path detected: '$db_id_path'";
             $filename = basename($db_id_path);
             $db_id_path = "../ProfileImage/image/IdPhoto/$filename";
@@ -132,6 +132,28 @@ try {
             $debug_log[] = "ID photo not found at: '$id_photo_path'";
         }
     }
+
+    // List of valid regions
+    $valid_regions = [
+        'Region I – Ilocos Region',
+        'Region II – Cagayan Valley',
+        'Region III – Central Luzon',
+        'Region IV-A – CALABARZON',
+        'MIMAROPA Region',
+        'Region V – Bicol Region',
+        'Region VI – Western Visayas',
+        'Region VII – Central Visayas',
+        'Region VIII – Eastern Visayas',
+        'Region IX – Zamboanga Peninsula',
+        'Region X – Northern Mindanao',
+        'Region XI – Davao Region',
+        'Region XII – SOCCSKSARGEN',
+        'Region XIII – Caraga',
+        'NCR – National Capital Region',
+        'CAR – Cordillera Administrative Region',
+        'BARMM – Bangsamoro Autonomous Region in Muslim Mindanao',
+        'NIR – Negros Island Region'
+    ];
 
     // Handle form submission
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -156,7 +178,7 @@ try {
         if (empty($birthdate)) $errors[] = "Date of birth is required.";
         if (empty($occupation)) $errors[] = "Occupation is required.";
         if (empty($address)) $errors[] = "Address is required.";
-        if (empty($region)) $errors[] = "Region is required.";
+        if (empty($region) || !in_array($region, $valid_regions)) $errors[] = "Please select a valid region.";
         if (empty($contact) || !preg_match("/^[0-9]{10}$/", $contact)) $errors[] = "Valid 10-digit contact number is required.";
 
         // Calculate age
@@ -315,7 +337,7 @@ try {
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
-    <link rel="icon" type="image/x-icon" href="/system-new/image/icons/logo1.ico">
+    <link rel="icon" type="image/x-icon" href="/image/icons/logo1.ico">
     <title>Edit Profile</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
@@ -344,6 +366,12 @@ try {
             background-color: var(--background-color);
             min-height: 100vh;
             display: flex;
+            opacity: 0;
+            animation: fadeIn 0.5s ease-in forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
         }
 
         .sidebar {
@@ -354,12 +382,20 @@ try {
             height: 100vh;
             position: fixed;
             box-shadow: var(--shadow);
+            transform: translateX(0);
+            transition: transform var(--transition-speed) ease;
+            z-index: 1000;
         }
 
         .sidebar .logo {
             width: 80px;
             margin: 0 auto 20px;
             display: block;
+            transition: transform var(--transition-speed);
+        }
+
+        .sidebar .logo:hover {
+            transform: scale(1.1);
         }
 
         .sidebar h2 {
@@ -367,6 +403,8 @@ try {
             font-weight: 500;
             text-align: center;
             margin-bottom: 30px;
+            opacity: 0;
+            animation: slideIn 0.5s ease forwards 0.2s;
         }
 
         .sidebar a {
@@ -378,28 +416,69 @@ try {
             border-radius: 4px;
             font-size: 14px;
             font-weight: 500;
-            transition: background var(--transition-speed);
+            transition: background var(--transition-speed), transform var(--transition-speed);
         }
 
         .sidebar a:hover,
         .sidebar a.active {
             background: var(--primary-hover);
+            transform: translateX(5px);
+        }
+
+        .sidebar .close-sidebar {
+            display: none;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 24px;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            transition: color var(--transition-speed);
+        }
+
+        .sidebar .close-sidebar:hover {
+            color: #f5f6fa;
         }
 
         .main-content {
             margin-left: 250px;
             padding: 30px;
             width: calc(100% - 250px);
+            transition: margin-left var(--transition-speed), width var(--transition-speed);
+        }
+
+        .menu-toggle {
+            background: var(--primary-color);
+            color: #ffffff;
+            border: none;
+            padding: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background var(--transition-speed);
+            display: none;
+        }
+
+        .menu-toggle:hover {
+            background: var(--primary-hover);
         }
 
         .dashboard-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             margin-bottom: 30px;
+            opacity: 0;
+            animation: slideIn 0.5s ease forwards 0.3s;
         }
 
         .dashboard-header h1 {
             font-size: 24px;
             font-weight: 700;
             color: var(--text-color);
+            flex-grow: 1;
         }
 
         .card {
@@ -408,6 +487,14 @@ try {
             box-shadow: var(--shadow);
             padding: 25px;
             margin-bottom: 20px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: cardAppear 0.5s ease forwards;
+            animation-delay: 0.4s;
+        }
+
+        @keyframes cardAppear {
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .card h2 {
@@ -455,6 +542,14 @@ try {
         .form-group textarea:focus {
             border-color: var(--primary-color);
             outline: none;
+        }
+
+        .form-group select {
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"><path fill="%23333333" d="M7 10l5 5 5-5z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 30px;
         }
 
         .form-group textarea {
@@ -540,6 +635,11 @@ try {
             display: none;
         }
 
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         @media (max-width: 768px) {
             .sidebar {
                 width: 200px;
@@ -566,21 +666,87 @@ try {
 
         @media (max-width: 576px) {
             .sidebar {
-                position: static;
-                width: 100%;
-                height: auto;
+                position: fixed;
+                width: 250px;
+                height: 100vh;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .sidebar .close-sidebar {
+                display: block;
             }
 
             .main-content {
                 margin-left: 0;
                 width: 100%;
+                padding: 10px;
+            }
+
+            .main-content.sidebar-active {
+                margin-left: 250px;
+                width: calc(100% - 250px);
+            }
+
+            .menu-toggle {
+                display: inline-block;
+                padding: 5px;
+                font-size: 16px;
+            }
+
+            .dashboard-header {
+                padding: 10px;
+                gap: 8px;
+            }
+
+            .dashboard-header h1 {
+                font-size: 14px;
+                line-height: 1.2;
+            }
+
+            .card {
+                padding: 10px;
+            }
+
+            .form-group input,
+            .form-group select,
+            .form-group textarea {
+                font-size: 13px;
+                padding: 8px;
+            }
+
+            .form-group select {
+                padding-right: 25px;
+                background-position: right 8px center;
+            }
+
+            .form-group label {
+                font-size: 13px;
+            }
+
+            .photo-preview,
+            .photo-placeholder {
+                width: 100px;
+                height: 100px;
+                font-size: 10px;
+            }
+
+            .submit-btn {
+                padding: 10px 20px;
+                font-size: 13px;
             }
         }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <img src="/system-new/image/icons/logo1.ico" alt="Organization Logo" class="logo">
+        <button class="close-sidebar" aria-label="Close Sidebar">
+            <i class='bx bx-x'></i>
+        </button>
+        <img src="/image/icons/logo1.ico" alt="Organization Logo" class="logo">
         <h2>Dashboard</h2>
         <a href="../dashboard.php">Dashboard</a>
         <a href="#" class="active" aria-current="page">Edit Profile</a>
@@ -588,6 +754,9 @@ try {
     </div>
     <div class="main-content">
         <div class="dashboard-header">
+            <button class="menu-toggle" aria-label="Toggle Sidebar" aria-expanded="false">
+                <i class='bx bx-menu'></i>
+            </button>
             <h1>Edit Profile</h1>
         </div>
         <div class="card">
@@ -642,7 +811,15 @@ try {
                     </div>
                     <div class="form-group">
                         <label for="region">Region *</label>
-                        <input type="text" id="region" name="region" value="<?php echo htmlspecialchars($appointment['region'] ?? ''); ?>" required>
+                        <select id="region" name="region" required aria-describedby="region-help">
+                            <option value="" disabled <?php echo empty($appointment['region']) ? 'selected' : ''; ?>>Select a Region</option>
+                            <?php foreach ($valid_regions as $region_option): ?>
+                                <option value="<?php echo htmlspecialchars($region_option); ?>" <?php echo ($appointment['region'] ?? '') === $region_option ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($region_option); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small id="region-help" class="form-text">Please select your region from the list.</small>
                     </div>
                     <div class="form-group">
                         <label for="contact">Contact Number * (+63)</label>
@@ -682,10 +859,40 @@ try {
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize debug log visibility
             const debugLog = document.querySelector('.debug-log');
             if (debugLog?.textContent.trim()) {
                 debugLog.style.display = 'block';
             }
+
+            // Sidebar toggle functionality
+            const sidebar = document.querySelector('.sidebar');
+            const menuToggle = document.querySelector('.menu-toggle');
+            const closeSidebar = document.querySelector('.close-sidebar');
+            const mainContent = document.querySelector('.main-content');
+            const isMobile = window.matchMedia('(max-width: 576px)').matches;
+
+            function toggleSidebar() {
+                const isActive = sidebar.classList.toggle('active');
+                mainContent.classList.toggle('sidebar-active', isActive);
+                menuToggle.setAttribute('aria-expanded', isActive);
+            }
+
+            function closeSidebarOnMobile() {
+                if (window.matchMedia('(max-width: 576px)').matches) {
+                    sidebar.classList.remove('active');
+                    mainContent.classList.remove('sidebar-active');
+                    menuToggle.setAttribute('aria-expanded', 'false');
+                }
+            }
+
+            menuToggle.addEventListener('click', toggleSidebar);
+            closeSidebar.addEventListener('click', closeSidebarOnMobile);
+
+            // Auto-close sidebar on navigation link click for mobile
+            document.querySelectorAll('.sidebar a').forEach(link => {
+                link.addEventListener('click', closeSidebarOnMobile);
+            });
 
             // Show/hide other gender field
             const genderSelect = document.querySelector('#gender');
@@ -734,19 +941,31 @@ try {
                 }
             });
 
+            // Contact number formatting
+            const contactInput = document.querySelector('#contact');
+            contactInput.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
+            });
+
+            // Close sidebar with Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && isMobile && sidebar.classList.contains('active')) {
+                    closeSidebarOnMobile();
+                }
+            });
+
             // Prevent back button issues
             window.addEventListener('pageshow', function(event) {
                 if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
                     window.location.reload();
                 }
             });
+
+            // Close sidebar on initial load for mobile
+            if (isMobile) {
+                closeSidebarOnMobile();
+            }
         });
     </script>
- <script>
-    const contactInput = document.querySelector('#contact');
-    contactInput.addEventListener('input', function() {
-        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
-    });
-</script>
 </body>
 </html>
