@@ -47,7 +47,7 @@ try {
     // Fetch appointment details
     $query = "SELECT appointment_id, first_name, middle_name, last_name, gender, other_gender, birthdate, age, 
                      occupation, address, region, email, contact, appointment_date, appointment_time, purpose, 
-                     profile_photo, status, created_at 
+                     profile_photo, status, created_at, reference_id 
               FROM appointments 
               WHERE user_id = ?";
     $stmt = $connection->prepare($query);
@@ -55,7 +55,7 @@ try {
         $debug_log[] = "Appointment query preparation failed: " . $connection->error;
         throw new Exception("Failed to prepare appointment query: " . $connection->error);
     }
-    $stmt->bind_param("i", $user_id); // Changed to "i" since user_id is int(11)
+    $stmt->bind_param("i", $user_id);
     if (!$stmt->execute()) {
         $debug_log[] = "Appointment query execution failed: " . $stmt->error;
         throw new Exception("Failed to execute appointment query.");
@@ -72,10 +72,11 @@ try {
 
     // Fetch ID details from user_information
     $id_type = '';
+    $id_number = '';
     $id_photo = '';
     $is_valid_id_photo = false;
     $id_photo_url = '';
-    $stmt = $connection->prepare("SELECT id_type, id_photo FROM user_information WHERE user_id = ?");
+    $stmt = $connection->prepare("SELECT id_type, id_number, id_photo FROM user_information WHERE user_id = ?");
     if ($stmt === false) {
         $debug_log[] = "User information query preparation failed: " . $connection->error;
     } else {
@@ -84,6 +85,7 @@ try {
             $result = $stmt->get_result();
             $user_info = $result->fetch_assoc();
             $id_type = $user_info['id_type'] ?? '';
+            $id_number = $user_info['id_number'] ?? '';
             $id_photo = $user_info['id_photo'] ?? '';
         } else {
             $debug_log[] = "User information query execution failed: " . $stmt->error;
@@ -719,6 +721,9 @@ try {
                     ?>
                 </p>
                 <p><strong>Purpose:</strong> <?php echo htmlspecialchars($appointment['purpose']); ?></p>
+                <?php if ($appointment['status'] === 'Approved' && !empty($appointment['reference_id'])): ?>
+                    <p><strong>Reference ID:</strong> <?php echo htmlspecialchars($appointment['reference_id']); ?></p>
+                <?php endif; ?>
                 <p><strong>Submitted On:</strong> 
                     <?php 
                         $submitted_on = $appointment['created_at'];
@@ -749,12 +754,6 @@ try {
                 }
                 ?>
             </div>
-            <?php if (!empty($debug_log)): ?>
-                <div class="debug-log">
-                    <strong>Debug Log:</strong><br>
-                    <?php echo nl2br(htmlspecialchars(implode("\n", $debug_log))); ?>
-                </div>
-            <?php endif; ?>
         </div>
     </div>
 
@@ -772,6 +771,7 @@ try {
                     <div class="id-placeholder">No ID Photo Available</div>
                 <?php endif; ?>
                 <p class="id-type"><strong>ID Type:</strong> <?php echo htmlspecialchars($id_type ?: 'Not Provided'); ?></p>
+                <p class="id-number"><strong>ID Number:</strong> <?php echo htmlspecialchars($id_number ?: 'Not Provided'); ?></p>
             </div>
         </div>
     </div>

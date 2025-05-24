@@ -279,7 +279,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_appointment'])
     $occupation = filter_input(INPUT_POST, 'occupation', FILTER_SANITIZE_STRING);
     $address = filter_input(INPUT_POST, 'address', FILTER_SANITIZE_STRING);
     $region = filter_input(INPUT_POST, 'region', FILTER_SANITIZE_STRING);
-    $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
+    $email = $_SESSION['email']; // Use session email directly
     $contact = filter_input(INPUT_POST, 'contact', FILTER_SANITIZE_STRING);
     $appointment_date = filter_input(INPUT_POST, 'appointmentDate', FILTER_SANITIZE_STRING);
     $appointment_time = filter_input(INPUT_POST, 'appointmentTime', FILTER_SANITIZE_STRING);
@@ -471,7 +471,6 @@ $connection->close();
             padding: 1.5rem;
         }
 
-        /* Form Container */
         .form-container {
             background: var(--white);
             max-width: 800px;
@@ -482,7 +481,6 @@ $connection->close();
             border: 1px solid var(--border-color);
         }
 
-        /* Header */
         .form-header {
             text-align: center;
             margin-bottom: 2rem;
@@ -500,7 +498,6 @@ $connection->close();
             color: var(--text-color);
         }
 
-        /* Navigation */
         .navbar {
             display: flex;
             justify-content: center;
@@ -527,7 +524,6 @@ $connection->close();
             color: var(--white);
         }
 
-        /* Form Sections */
         .form-section {
             margin-bottom: 2rem;
             padding-bottom: 1.5rem;
@@ -551,7 +547,6 @@ $connection->close();
             gap: 1.5rem;
         }
 
-        /* Labels and Inputs */
         .label {
             display: block;
             font-size: 0.875rem;
@@ -604,7 +599,6 @@ $connection->close();
             cursor: not-allowed;
         }
 
-        /* Contact Group */
         .contact-group {
             display: flex;
             gap: 0.75rem;
@@ -618,7 +612,6 @@ $connection->close();
             border-radius: 6px;
         }
 
-        /* Photo Upload Section */
         .photo-upload-group {
             display: flex;
             flex-direction: column;
@@ -666,7 +659,6 @@ $connection->close();
             flex-wrap: wrap;
         }
 
-        /* Buttons */
         .btn {
             padding: 0.75rem 1.5rem;
             border: none;
@@ -698,7 +690,6 @@ $connection->close();
             transform: translateY(-1px);
         }
 
-        /* Messages and Feedback */
         .error-message,
         .success-message {
             padding: 0.75rem;
@@ -728,7 +719,6 @@ $connection->close();
             display: none;
         }
 
-        /* Loading Spinner and Progress */
         .loading-spinner {
             display: none;
             border: 3px solid #e5e7eb;
@@ -762,7 +752,6 @@ $connection->close();
             transition: width 0.3s ease;
         }
 
-        /* Flatpickr Customization */
         .flatpickr-day.thursday {
             color: var(--text-color) !important;
             font-weight: 600;
@@ -783,7 +772,6 @@ $connection->close();
             font-size: 0.875rem;
         }
 
-        /* Debug Log */
         .debug-log {
             font-size: 0.75rem;
             color: #555;
@@ -794,7 +782,6 @@ $connection->close();
             display: none;
         }
 
-        /* Accessibility */
         button:focus,
         a:focus,
         input:focus,
@@ -803,7 +790,6 @@ $connection->close();
             outline-offset: 2px;
         }
 
-        /* Responsive Design */
         @media (max-width: 768px) {
             .form-container {
                 padding: 1.5rem;
@@ -1042,7 +1028,7 @@ $connection->close();
                 <div class="form-row">
                     <div class="form-group">
                         <label for="email" class="label required">Email Address</label>
-                        <input type="email" id="email" name="email" required autocomplete="off" aria-required="true" placeholder="Enter your email">
+                        <input type="email" id="email" name="email" required readonly autocomplete="off" aria-required="true" value="<?php echo htmlspecialchars($_SESSION['email']); ?>">
                         <span class="error" id="email-error"><?php echo htmlspecialchars($errors['email'] ?? ''); ?></span>
                     </div>
                     <div class="form-group">
@@ -1154,7 +1140,8 @@ $connection->close();
                 idPhotoProgress: document.getElementById('idPhotoProgress'),
                 compressedImage: document.getElementById('compressedImage'),
                 actionButtons: document.getElementById('actionButtons'),
-                region: document.getElementById('region')
+                region: document.getElementById('region'),
+                email: document.getElementById('email')
             };
 
             // Initialize debug log visibility
@@ -1463,7 +1450,7 @@ $connection->close();
                 }
             };
 
-            ['lastName', 'firstName', 'occupation', 'address', 'region', 'purpose', 'email', 'contact', 'age', 'idNumber', 'gender', 'idType'].forEach(id => {
+            ['lastName', 'firstName', 'occupation', 'address', 'region', 'purpose', 'contact', 'age', 'idNumber', 'gender', 'idType'].forEach(id => {
                 const input = document.getElementById(id);
                 if (input) {
                     input.addEventListener('input', debounce(e => validateField(id, e.target.value), 300));
@@ -1513,7 +1500,6 @@ $connection->close();
                         }
                     }
 
-                    // Sanitized photo validation
                     const profilePhoto = '<?php echo addslashes($_SESSION['profilePhoto'] ?? ''); ?>';
                     const profilePhotoPath = '<?php echo addslashes(str_replace(PROFILE_RELATIVE_UPLOAD_DIR, PROFILE_PHYSICAL_UPLOAD_DIR, $_SESSION['profilePhoto'] ?? '')); ?>';
                     if (!profilePhoto || !profilePhotoPath) {
@@ -1530,6 +1516,13 @@ $connection->close();
                         isValid = false;
                     } else {
                         showError('idPhoto', '');
+                    }
+
+                    // Validate email matches session
+                    const sessionEmail = '<?php echo addslashes($_SESSION['email']); ?>';
+                    if (elements.email.value !== sessionEmail) {
+                        showError('email', 'Email cannot be modified.');
+                        isValid = false;
                     }
                 } catch (error) {
                     console.error('Form validation error:', error);
